@@ -82,7 +82,7 @@ describe('spotPassesFilters 谓词（真实源码执行）', () => {
 
   it('无条件时全部通过；_lines 缺失的景点只被地铁条件挡下', () => {
     expect(mod.spotPassesFilters(SPOT, 0)).toBe(true);
-    expect(mod.spotPassesFilters({ ...SPOT, _lines: undefined }, 0)).toBe(true);   // spots.json 合并新推入的景点
+    expect(mod.spotPassesFilters({ ...SPOT, _lines: undefined }, 0)).toBe(true);   // _lines 未预计算的景点
     expect(mod.spotPassesFilters({ ...SPOT, _lines: undefined }, 2)).toBe(false);
   });
 

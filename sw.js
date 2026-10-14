@@ -1,7 +1,7 @@
 // PWA Service Worker v30 — 分级缓存策略
 // 改任何前端文件后把 VERSION 加 1：三个缓存名都跟着它走，
 // activate 会顺手把上一个 VERSION 的缓存删掉（见下方 activate）。
-var VERSION = 43;
+var VERSION = 45;
 var CACHE = 'wuhan-map-v' + VERSION;
 var BYPASS = false;
 var STATIC_CACHE = 'wuhan-map-static-v' + VERSION;

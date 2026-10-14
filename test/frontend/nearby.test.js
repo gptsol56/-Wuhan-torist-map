@@ -58,7 +58,7 @@ describe('nearbySpots（真实源码执行）', () => {
     expect(r[0].dist).toBeLessThan(r[1].dist);
   });
 
-  it('同名不同对象也算自身（spots.json 合并可能产生副本）', () => {
+  it('同名不同对象也算自身（数据源重复条目的防御）', () => {
     const A2 = { ...A };
     const { nearbySpots } = load([A, A2, B]);
     expect(nearbySpots(A).map((x) => x.spot.name)).toEqual(['B']);

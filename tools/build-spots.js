@@ -9,11 +9,11 @@
 //   - 本脚本生成两份产物，都进仓库，项目保持零构建；
 //   - `npm test` 会先跑本脚本；test/frontend/spotsBuild.test.js 校验产物同步。
 //
-// 两份产物的分工（沿用原架构，app.js 逻辑不动）：
-//   - spots.json      —— HTTP 环境下 app.js 启动后 fetch 同目录这个文件合并静态字段；
-//                        Express 后端（server/routes/crowd.js）也读它做围栏查询
-//   - spots.data.js   —— classic script 定义全局 SPOTS，HTML 里在 app.min.js 之前
-//                        defer 加载；file:// 直开和离线（SW 预缓存）都靠它兜底
+// 两份产物的分工（P1 后前端不再于运行期拉 spots.json —— 与 spots.data.js 逐字节
+// 相同，拉了也是白拉一份再全量重绘）：
+//   - spots.data.js   —— 唯一的前端数据入口：classic script 定义全局 SPOTS，HTML 里
+//                        在 app.min.js 之前 defer 加载；file:// 直开与离线都靠它
+//   - spots.json      —— 仅供 Express 后端（server/routes/crowd.js）围栏查询
 //
 // 产物都是「一景点一行」：数据要人工 review/diff，可读性优先于极致压缩。
 

@@ -13,10 +13,9 @@ var TMAP_KEY = 'KLDBZ-BRPET-P5VXP-LQ5I4-NJQQ2-U5FWA';
    spots.src.json 生成，HTML 中先于本脚本 defer 加载）；HTTP 环境下启动后仍会
    从同目录 spots.json 拉取合并静态字段（两份产物同源，见 test/frontend/spotsBuild.test.js）。 */
 
-/* SPOTS name→index 反查索引（O(1) 替代 O(n) indexOf）*/
+/* SPOTS name→index 反查索引（O(1) 替代 O(n) indexOf）；运行期 SPOTS 不再变动 */
 var _spotIndexMap = null;
 function getSpotIndex(s){ if(!_spotIndexMap) _spotIndexMap = new Map(SPOTS.map(function(s,i){ return [s,i]; })); return _spotIndexMap.get(s); }
-function invalidateSpotIndex(){ _spotIndexMap = null; }   // spots.json 更新后调用
 
 /* ================== 常量定义 ================== */
 var CROWD = {"高":2,"中":1,"低":0};
@@ -117,12 +116,16 @@ window.__tmapMap = mapInst;
       if(r.width > 0 && r.width <= 120 && r.height <= 40) el.style.display = 'none';
     });
   }
-  new MutationObserver(function(){
+  var obs = new MutationObserver(function(){
     if(pending) return;
     pending = true;
     setTimeout(sweep, 80);
-  }).observe(mapEl, { childList: true, subtree: true });
+  });
+  obs.observe(mapEl, { childList: true, subtree: true });
   sweep();
+  // 胶囊只在地图样式/瓦片加载期出现：20 秒后监视器退役（末次兜底扫描），
+  // 之后平移/缩放的瓦片 DOM 变动不再触发任何扫描 —— 常态零开销
+  setTimeout(function(){ obs.disconnect(); sweep(); }, 20000);
 })();
 // 注意：不要 'var map = mapInst'（会被 with() 块污染）；SDK 调用全部使用 window.__tmapMap
   // 限制地图视野在武汉大市范围内，防止拖拽到空白区域
@@ -3328,38 +3331,6 @@ window.__app = {
 };
 window.__appReady = true;
 
-/* 末尾加载 spots.json：须等 startApp 全部同步代码执行完（list/lastGeoKey 已赋值）再发起 fetch，
-   否则地图初始化早期异常中断 startApp 时，fetch 回调会抛错、跳过首次渲染 */
-(function(){
-  fetch('spots.json', {cache:'reload'})  // cache:reload → 重新拉取但允许 SW 缓存未来访问
-    .then(function(r){ return r && r.ok ? r.json() : null; })
-    .then(function(data){
-      if(Array.isArray(data) && data.length){
-        // 按名称回填静态字段到既有对象，而不是整体替换 SPOTS ——
-        // 否则会清掉 fetchLiveData 已合并到对象上的 _liveCrowd/_typPeak/_heatCells/_stale 等动态字段。
-        var byName = {};
-        SPOTS.forEach(function(s){ byName[s.name] = s; });
-        data.forEach(function(d){
-          var e = byName[d.name];
-          if(e){
-            Object.keys(d).forEach(function(k){
-              if(k === 'peak') return;   // peak 由实时数据源给出，勿用静态兜底覆盖
-              e[k] = d[k];
-            });
-          } else {
-            SPOTS.push(d);
-          }
-        });
-        invalidateSpotIndex();   // SPOTS 变化后刷新索引
-        if(typeof refreshView === 'function'){ refreshView(); }
-        else {
-          if(typeof applyFilters === 'function') applyFilters();
-          if(typeof renderBoard === 'function') renderBoard();
-        }
-      }
-    })
-    .catch(function(e){ console.warn('spots.json 加载失败：', e); });
-})();
 } /* end startApp */
 
 // 鼠标光斑（--px/--py 跟随 + ::before 径向渐变）已整体移除。
