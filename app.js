@@ -99,6 +99,31 @@ var mapInst = new TMap.Map('map', {
 });
 // 暴露到 window 供 SDK / 全局访问
 window.__tmapMap = mapInst;
+
+/* 用户要求：地图自带的「Loading」小胶囊弱网下会一直挂着 —— 直接取消。
+   不能按 class 批量隐藏（瓦片带 tile_loading 状态类，会误伤地图），
+   按「文本恰为 Loading/加载中 + 无子元素 + 小胶囊尺寸」精准移除。 */
+(function suppressTmapLoader(){
+  var mapEl = document.getElementById('map');
+  if(!mapEl || !window.MutationObserver) return;
+  var pending = false;
+  function sweep(){
+    pending = false;
+    mapEl.querySelectorAll('div,span').forEach(function(el){
+      if(el.children.length) return;
+      var t = (el.textContent || '').trim();
+      if(!/^(loading|加载中|loading\.\.\.)$/i.test(t)) return;
+      var r = el.getBoundingClientRect();
+      if(r.width > 0 && r.width <= 120 && r.height <= 40) el.style.display = 'none';
+    });
+  }
+  new MutationObserver(function(){
+    if(pending) return;
+    pending = true;
+    setTimeout(sweep, 80);
+  }).observe(mapEl, { childList: true, subtree: true });
+  sweep();
+})();
 // 注意：不要 'var map = mapInst'（会被 with() 块污染）；SDK 调用全部使用 window.__tmapMap
   // 限制地图视野在武汉大市范围内，防止拖拽到空白区域
   var WUHAN_BOUNDS = new TMap.LatLngBounds(
@@ -2404,6 +2429,7 @@ fillHistoryLists();
    仅当「人流着色」关闭时，附一行说明地图标记为中性色。 */
 function renderLegend(){
   var el = document.getElementById('legend');
+  if(!el) return;   // 图例已按需求移除（容器删于 index.html）；保留函数使三处调用安全空转
   var offNote = crowdColorOn ? '' : '<span class="lg-b" style="color:#9aa">地图标记已用中性色 · 点👥人流色恢复（列表/弹窗仍按此配色）</span>';
   var heatScale = crowdColorOn
     ? '<div class="heat-scale" title="热力强度（近10天历史热力）"><span class="hs-lbl">低</span><span class="hs-bar"></span><span class="hs-lbl">高</span></div>'
@@ -2425,15 +2451,6 @@ renderLegend();
 /* ================== 实时数据层（天气 / 行政区划 / 路况 / 动态人流 + 外部数据源）================== */
 
 /* ---- 天气：Open-Meteo（免费无 key，CORS 支持） ---- */
-var WMO = {
-  0:['☀️','晴'],1:['🌤','基本晴'],2:['⛅','多云'],3:['☁️','阴'],
-  45:['🌫','雾'],48:['🌫','雾凇'],51:['🌦','小毛毛雨'],53:['🌦','毛毛雨'],55:['🌧','大毛毛雨'],
-  56:['🌧','冻毛毛雨'],57:['🌧','冻毛毛雨'],61:['🌦','小雨'],63:['🌧','中雨'],65:['🌧','大雨'],
-  66:['🌧','冻雨'],67:['🌧','冻雨'],71:['🌨','小雪'],73:['🌨','中雪'],75:['❄️','大雪'],77:['🌨','雪粒'],
-  80:['🌦','阵雨'],81:['🌧','阵雨'],82:['⛈','强阵雨'],85:['🌨','阵雪'],86:['❄️','强阵雪'],
-  95:['⛈','雷雨'],96:['⛈','雷雨伴冰雹'],99:['⛈','雷雨伴冰雹']
-};
-function windDirCN(deg){ return ['北','东北','东','东南','南','西南','西','西北'][Math.round(deg/45)%8]; }
 function pad2(n){ return (n<10?'0':'')+n; }
 
 /* ---- 行政区划：geojson.cn 湖北省 TopoJSON（实时拉取，CORS 支持） ---- */
@@ -2873,6 +2890,86 @@ function renderBoard(){
     }
   }
 }
+/* ---- 天气：Open-Meteo（免费无 key，CORS 友好）----
+   武汉城区定点预报，今天+明天，随人流的 10 分钟周期一起刷新。
+   定位是辅助信息：拉取失败只留旧卡片/保持隐藏，绝不弹 toast 打扰。 */
+var WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=30.5928&longitude=114.3055' +
+  '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode' +
+  '&timezone=Asia%2FShanghai&forecast_days=2';
+
+/* WMO weathercode → {emoji, txt}。只覆盖游客关心的档位，未知的归「天气」。 */
+function wmoInfo(code){
+  var c = (code == null) ? -1 : code;
+  if(c === 0) return {emoji:'☀️', txt:'晴'};
+  if(c === 1) return {emoji:'🌤️', txt:'大致晴'};
+  if(c === 2) return {emoji:'⛅', txt:'多云'};
+  if(c === 3) return {emoji:'☁️', txt:'阴'};
+  if(c === 45 || c === 48) return {emoji:'🌫️', txt:'雾'};
+  if(c >= 51 && c <= 57) return {emoji:'🌦️', txt:'毛毛雨'};
+  if(c >= 61 && c <= 67) return {emoji:'🌧️', txt:'雨'};
+  if(c >= 71 && c <= 77) return {emoji:'🌨️', txt:'雪'};
+  if(c >= 80 && c <= 82) return {emoji:'🌦️', txt:'阵雨'};
+  if(c === 85 || c === 86) return {emoji:'🌨️', txt:'阵雪'};
+  if(c >= 95) return {emoji:'⛈️', txt:'雷暴'};
+  return {emoji:'🌡️', txt:'天气'};
+}
+
+/* 依据「今天」给一句出行建议（弹在卡片尾部） */
+function weatherAdvice(day){
+  if(!day) return '';
+  if(day.code >= 95) return '可能有雷暴，户外行程留足余量';
+  if(day.pop != null && day.pop >= 60) return '今天降水概率高，记得带伞 ☂';
+  if(day.code >= 61 && day.code <= 82) return '有降雨，安排些室内备选（博物馆/美术馆）';
+  if(day.max != null && day.max >= 35) return '高温酷暑，注意防晒补水，正午避开户外';
+  if(day.max != null && day.max <= 5) return '气温较低，注意保暖';
+  return '天气适宜出游，玩得开心';
+}
+
+/* open-meteo 响应 → {days:[{date,max,min,pop,code}]}；包不合法返回 null */
+function parseWeather(j){
+  var d = j && j.daily;
+  if(!d || !Array.isArray(d.time) || d.time.length < 2 ||
+     !Array.isArray(d.temperature_2m_max) || !Array.isArray(d.temperature_2m_min)) return null;
+  var days = [];
+  for(var i = 0; i < Math.min(2, d.time.length); i++){
+    days.push({
+      date: d.time[i],
+      max: Math.round(d.temperature_2m_max[i]),
+      min: Math.round(d.temperature_2m_min[i]),
+      pop: (Array.isArray(d.precipitation_probability_max) && d.precipitation_probability_max[i] != null)
+        ? Math.round(d.precipitation_probability_max[i]) : null,
+      code: Array.isArray(d.weathercode) ? d.weathercode[i] : null
+    });
+  }
+  return { days: days };
+}
+
+function renderWeatherCard(w){
+  var el = document.getElementById('weatherCard');
+  if(!el || !w || !w.days.length) return;
+  var labels = ['今天', '明天'];
+  el.innerHTML = '<div class="w-head">🌤 武汉天气</div>' +
+    '<div class="w-days">' + w.days.map(function(day, i){
+      var info = wmoInfo(day.code);
+      return '<div class="w-day" title="' + esc(labels[i] || day.date) + '">' +
+        '<span class="w-emoji">' + info.emoji + '</span>' +
+        '<span class="w-body"><b>' + (labels[i] || day.date) + '</b> ' + esc(info.txt) +
+        ' · ' + day.max + '° / ' + day.min + '°' +
+        (day.pop != null ? ' · 💧' + day.pop + '%' : '') + '</span></div>';
+    }).join('') + '</div>' +
+    (weatherAdvice(w.days[0]) ? '<div class="w-tip">💬 ' + esc(weatherAdvice(w.days[0])) + '</div>' : '');
+  el.hidden = false;
+}
+
+function fetchWeather(){
+  return withTimeout(fetch(WEATHER_URL).then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }), 9000, '天气超时')
+    .then(function(j){
+      var w = parseWeather(j);
+      if(w) renderWeatherCard(w);
+    })
+    .catch(function(e){ console.warn('[weather] 获取失败：', e && e.message); });
+}
+
 function fetchLiveData(){
   if(liveStatus){ liveStatus.classList.add('loading'); liveStatus.classList.remove('ok','sim'); }
   if(!LIVE_DATA_URL){ feedConnected = false; return Promise.resolve(); }
@@ -3054,6 +3151,7 @@ function startLive(){
   // 性能优化（E）：把天气和人流数据合并到同一个 setInterval 周期性并发请求（10 分钟）
   // 启动时：一次性并发拉取首屏数据
   function pollExternal(){
+    fetchWeather();   // 天气与人流并发拉取：天气独立成败，失败不打扰人流链路
     return fetchLiveData().then(function(){
       // 成功路径已在 fetchLiveData 内部重绘（refreshView + 徽标），这里不用再动
     }, function(err){ console.warn('[live] 更新失败', err); });
@@ -3172,12 +3270,9 @@ function applyShareHash(h){
 }
 
 /* 启动入口：restorePrefs 之后、startLive 之前调用（refreshView 会统一按新状态重绘） */
-function applyShareFromLocation(){
-  if(!location.hash) return;
-  try { applyShareHash(location.hash); } catch(e) { console.warn('[share] hash 应用失败：', e); }
-  // hash 不在这里立刻清：SW 更新会触发 controllerchange → 自动刷新，若 hash 已清，
-  // 刷新后的页面只剩 localStorage（分享状态整体丢失）。留到用户首次交互再清 ——
-  // 自动刷新能靠 URL 里的 hash 重新应用，用户一旦开始操作就清掉，状态主导权交还本人。
+/* 分享 hash 用完不立刻清（SW 更新自动刷新会丢状态，见下），挂到用户首次交互再清。
+   启动与 hashchange（F4）两条路都走这里武装，重复武装是幂等的。 */
+function armShareHashClear(){
   var clear = function(){
     history.replaceState(null, '', location.pathname + location.search);
     window.removeEventListener('pointerdown', clear);
@@ -3186,6 +3281,23 @@ function applyShareFromLocation(){
   window.addEventListener('pointerdown', clear);
   window.addEventListener('keydown', clear);
 }
+function applyShareFromLocation(){
+  if(!location.hash) return;
+  try { applyShareHash(location.hash); } catch(e) { console.warn('[share] hash 应用失败：', e); }
+  armShareHashClear();
+}
+/* 已打开的标签页里点分享链接只会触发同文档 hashchange（F4）：
+   应用状态 + 重绘 + 重新武装「交互后清除」。replaceState 清除不会触发 hashchange，无循环。 */
+function onShareHashChange(){
+  if(!location.hash) return;
+  var applied = false;
+  try { applied = applyShareHash(location.hash); } catch(e) { console.warn('[share] hash 应用失败：', e); }
+  if(applied){
+    refreshView();
+    armShareHashClear();
+  }
+}
+window.addEventListener('hashchange', onShareHashChange);
 
 function copyShareUrl(){
   var h = buildShareHash();
@@ -3348,4 +3460,34 @@ if('serviceWorker' in navigator){
     window.location.reload();
   });
 }
+
+/* ---- PWA 安装引导（F5）----
+   beforeinstallprompt 只有 Chromium 系浏览器满足安装条件时才发（https/localhost、
+   图标齐全、未安装过）。iOS Safari 不发这个事件 —— 菜单按钮保持隐藏，
+   用户手动「添加到主屏幕」由 apple-touch-icon 支持。 */
+var deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  var b = document.getElementById('btnInstall');
+  if(b) b.hidden = false;
+});
+(function(){
+  var b = document.getElementById('btnInstall');
+  if(!b) return;
+  b.onclick = function(){
+    if(!deferredInstallPrompt){ b.hidden = true; return; }
+    deferredInstallPrompt.prompt();
+    Promise.resolve(deferredInstallPrompt.userChoice).then(function(choice){
+      if(choice && choice.outcome === 'accepted') toast('已添加到桌面，之后可离线打开 ✨', 'ok');
+      deferredInstallPrompt = null;
+      b.hidden = true;
+    }).catch(function(){ deferredInstallPrompt = null; b.hidden = true; });
+  };
+})();
+window.addEventListener('appinstalled', function(){
+  deferredInstallPrompt = null;
+  var b = document.getElementById('btnInstall');
+  if(b) b.hidden = true;
+});
 

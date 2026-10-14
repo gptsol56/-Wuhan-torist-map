@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "checkJs": false,
+    "maxNodeModuleJsDepth": 0
+  },
+  "include": ["*.js", "globals.d.ts"],
+  "exclude": ["node_modules", "server", "test", "tools"]
+}

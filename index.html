@@ -46,6 +46,7 @@
       <div class="sub">精选 50 个景点 · 预约 &amp; 人流</div>
       <div class="live-status sim" id="liveStatus">🟡 本地动态估算 · 更新于 --:--:--</div>
     </div>
+    <div class="weather-card" id="weatherCard" hidden></div>
     <div class="filters">
       <div class="f-row">
         <div class="q-wrap">
@@ -97,6 +98,7 @@
       <div class="menu-head">行程</div>
       <div class="itin-list" id="itinList"></div>
       <div class="menu-head">工具</div>
+      <button class="menu-item" id="btnInstall" hidden title="安装到桌面/主屏，可离线使用">📲 安装到桌面</button>
       <button class="menu-item" id="btnRoute" title="路线查询">🛣️ 路线查询</button>
       <button class="menu-item" id="btn-measure" title="测量距离">📏 测距</button>
       <button class="menu-item" id="btn-north" title="回正北方向">🧭 回正北</button>
@@ -110,8 +112,6 @@
       <button class="menu-item" id="btn-theme" title="切换到夜间模式" aria-pressed="false">🌙 夜间</button>
       <button class="menu-item" id="btn-violet" title="切换到紫晶模式" aria-pressed="false">💜 紫晶</button>
       <button class="menu-item" id="btn-pitch" title="切换 3D 俯仰视角" aria-pressed="false">🕋 3D</button>
-      <div class="menu-head">图例</div>
-      <div class="legend" id="legend"></div>
     </div>
     <button class="btn" id="locateBtn" title="回到我的位置">📍</button>
     <button class="btn" id="toggle">☰ 列表</button>

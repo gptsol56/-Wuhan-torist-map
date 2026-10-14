@@ -66,9 +66,9 @@ describe('☰ 工具菜单（原 .ctl 工具条收纳而来）', () => {
     for (const id of ids) {
       expect(ui.menu.querySelector('#' + id), `#${id} 应在 #menu 内`).toBeTruthy();
     }
-    // 常驻工具条 .ctl 整块已删除
+    // 常驻工具条 .ctl 整块已删除；图例节已按需求移除（renderLegend 空转守卫）
     expect(document.getElementById('ctl')).toBeNull();
-    expect(ui.menu.querySelector('#legend')).toBeTruthy();
+    expect(ui.menu.querySelector('#legend')).toBeNull();
   });
 
   it('选中某个功能项后自动收起', () => {

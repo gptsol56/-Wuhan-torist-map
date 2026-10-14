@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadPart } from './helpers/loadAppPart.js';
 
 // 分享链接（C4）的守卫：
@@ -132,5 +132,58 @@ describe('分享链接往返一致', () => {
     expect(b.mod.crowdF).toBe('高');
     expect(b.mod.waypoints).toEqual(['黄鹤楼', '户部巷', '汉口江滩']);
     expect(b.mod.curMode).toBe('walking');
+  });
+});
+
+describe('onShareHashChange（F4：已打开的标签页点分享链接）', () => {
+  afterEach(() => {
+    history.replaceState(null, '', location.pathname);
+  });
+
+  function loadChange() {
+    const refreshView = vi.fn();
+    const mod = loadPart({
+      parts: [
+        'var:crowdF', 'var:waypoints', 'var:curMode', 'var:routeModeName',
+        'var:ZONE_OK_LIST', 'var:CROWD_OK_LIST', 'var:SORT_OK_LIST',
+        'setRouteMode', 'buildShareHash', 'applyShareHash', 'armShareHashClear', 'onShareHashChange',
+      ],
+      stubs: {
+        SPOTS,
+        rpModes: { querySelectorAll: () => [] },
+        applyChipActive: vi.fn(),
+        renderWaypoints: vi.fn(),
+        syncAddButtons: vi.fn(),
+        setRoutePanel: vi.fn(),
+        refreshView,
+        document: { getElementById: () => null },
+        RESERVE_TXT: { need_reserve: 1, need_ticket: 1, free: 1 },
+      },
+      exports: ['zoneF', 'onShareHashChange'],
+    });
+    return { mod, refreshView };
+  }
+
+  it('有效 hash：应用状态并重绘（refreshView 被调）', () => {
+    const { mod, refreshView } = loadChange();
+    history.replaceState(null, '', location.pathname + '#z=' + encodeURIComponent('汉阳'));
+    mod.onShareHashChange();
+    expect(mod.zoneF).toBe('汉阳');
+    expect(refreshView).toHaveBeenCalledTimes(1);
+  });
+
+  it('无效 hash：零应用、零重绘', () => {
+    const { mod, refreshView } = loadChange();
+    history.replaceState(null, '', location.pathname + '#z=北京&crowd=超高');
+    mod.onShareHashChange();
+    expect(mod.zoneF).toBe('');
+    expect(refreshView).not.toHaveBeenCalled();
+  });
+
+  it('无 hash：直接返回', () => {
+    const { refreshView } = loadChange();
+    history.replaceState(null, '', location.pathname);
+    // 直接调用不抛错即可（无 hash 短路）
+    expect(refreshView).not.toHaveBeenCalled();
   });
 });
