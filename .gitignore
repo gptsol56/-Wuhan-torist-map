@@ -1,0 +1,14 @@
+# 依赖
+node_modules/
+server/node_modules/
+
+# 密钥与本地配置（server/.env 含 JIKE_API_KEY，绝不能进仓库；模板 .env.example 保留）
+.env
+server/.env
+
+# 运行时产物
+server/.cache/
+*.log
+
+# 本地杂项（PowerShell 重定向残留的空文件）
+$null

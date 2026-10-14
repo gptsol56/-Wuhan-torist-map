@@ -1,0 +1,18 @@
+{
+  "name": "wuhan-map-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "武汉景点地图 —— 前端测试基建。应用本体是零构建的 app.js（classic script + defer），这里只承载 DOM 层单测。",
+  "scripts": {
+    "build:css": "node tools/build-css.js",
+    "build:js": "node tools/build-js.js",
+    "build:spots": "node tools/build-spots.js",
+    "test": "npm run build:css && npm run build:js && npm run build:spots && vitest run",
+    "test:watch": "vitest",
+    "test:server": "npm --prefix server test"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.2",
+    "vitest": "^5.0.3"
+  }
+}

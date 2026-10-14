@@ -1,0 +1,876 @@
+﻿:root{
+    --red:#e5484d; --orange:#c2410c; --green:#30a46c;   /* 中档橙加深：白字在 #c2410c 上对比 ~5:1，浅/深色皆可读 */
+    --adv-hi:#c03539; --adv-mid:#9a6a00; --adv-lo:#1f7a4d;   /* 浅色下人流建议文字色（足对比度） */
+    --res-text:#5b3bbf; --tick-text:#33566f;   /* 预约/购票角标文字色（浅色） */
+    --res-bg:rgba(110,86,207,.18); --tick-bg:rgba(79,111,143,.18);
+    --ink:#1a1d21; --muted:#667; --line:#e6e8ec; --bg:#f7f8fa; --accent:#0b7a4b;
+    /* 液态玻璃基色（浅色） */
+    --glass:#f7f8fa; --glass-soft:rgba(255,255,255,.5); --glass-strong:rgba(255,255,255,.75);
+    --glass-border:rgba(255,255,255,.65); --glass-hi:rgba(255,255,255,.85);
+    --glass-head:rgba(255,255,255,.38); --glass-head-border:rgba(255,255,255,.6);
+    --glass-shadow:rgba(0,0,0,.2);
+    --glass-blur:blur(14px) saturate(160%);
+    --map-filter:none;
+    --src-real: #30a46c;
+    --src-mock: #b58a00;
+    --src-real-bg: rgba(48,164,108,.14);
+    --src-mock-bg: rgba(181,138,0,.14);
+    --live-loading: #4a6fa5;
+  }
+  body.dark{
+    --ink:#e8eaed; --muted:#9aa0a6; --line:#3a4048; --bg:#12151a; --accent:#34d399;
+    --adv-hi:#ff8a8d; --adv-mid:#ffbf67; --adv-lo:#7fd9a8;   /* 深色下人流建议文字色 */
+    --res-text:#c9b4ff; --tick-text:#a8c6e0;   /* 预约/购票角标文字色（深色） */
+    --res-bg:rgba(140,113,242,.22); --tick-bg:rgba(120,155,185,.22);
+    --glass:#1a1e25; --glass-soft:rgba(35,40,50,.55); --glass-strong:rgba(40,45,56,.7);
+    --glass-border:rgba(255,255,255,.16); --glass-hi:rgba(255,255,255,.12);
+    --glass-head:rgba(30,35,45,.55); --glass-head-border:rgba(255,255,255,.14);
+    --glass-shadow:rgba(0,0,0,.55);
+    --glass-blur:blur(14px) saturate(160%);
+    --map-filter:brightness(.78) saturate(.85);
+    --src-real: #7fd9a8;
+    --src-mock: #e8c66d;
+    --src-real-bg: rgba(127,217,168,.18);
+    --src-mock-bg: rgba(232,198,109,.18);
+  }
+  /* ---------- 紫晶皮肤 ----------
+     紫色是「深色玻璃 + 紫色极光」，所以 body 上同时挂 dark 和 violet 两个类：
+     body.dark 那 105 条深色表面覆盖直接复用，紫晶只负责把色相刷成紫/品红。
+     复用而不是重写第二套深色表面，是因为深色那一套是踩着坑逐条调出来的 ——
+     深色面板上残留的浅色 ::before 覆盖层要压到 .07~.09、棱镜描边降到 .35、
+     逐个补 hover 白底，这些漏一条就是一块白斑。重写必然漏。
+     本块必须排在所有 body.dark 规则之后：两者特异性都是 (0,1,1)，
+     靠源码顺序决胜。 */
+  body.violet{
+    --ink:#f4edff; --muted:#bca9e4; --line:#4d3878; --bg:#2a1a45; --accent:#c084fc;
+    --adv-hi:#ff9dc6; --adv-mid:#ffd18c; --adv-lo:#8ee2ca;
+    --res-text:#dbc7ff; --tick-text:#abc9f2;
+    --res-bg:rgba(192,132,252,.24); --tick-bg:rgba(132,162,232,.22);
+    --glass:#241640; --glass-soft:rgba(74,46,124,.5); --glass-strong:rgba(86,52,140,.66);
+    --glass-border:rgba(208,172,255,.2); --glass-hi:rgba(228,202,255,.16);
+    --glass-head:rgba(66,40,110,.5); --glass-head-border:rgba(208,172,255,.18);
+    --glass-shadow:rgba(16,5,36,.6);
+    /* 底图只做轻微冷调，不做紫色滤镜。
+       试过三条路都走不通，过程记在这免得再踩：
+         ① saturate(2.1) + hue-rotate(228deg) → 整张图亮品红，道路陆地糊成一片粉；
+         ② 降到 hue-rotate(214deg) → 仍落在品红区（~330°），还是粉；
+         ③ 继续降到 152deg → 翻到另一头，陆地变鲑鱼粉、水变青色，两边越拉越开。
+       根因：hue-rotate 是全局旋转，陆地是米色、水是蓝色，各自转各自的，
+       永远不会收敛成同一个紫。真要整图变紫只能先 grayscale 再 sepia 再旋转
+       （单色调 duotone），代价是底图失去全部色彩编码 —— 绿地和蓝水分不出来，
+       找路明显变难。地图是产品内容不是界面外壳，所以这里选择保可读性：
+       只压一点饱和、往冷推一点、提亮，让它安静地待在紫色玻璃后面。
+       真想要整张紫的 duotone 地图，改这一行就能开。 */
+    --map-filter:saturate(.88) hue-rotate(-12deg) brightness(1.05) contrast(.93);
+    --src-real:#8ee2ca; --src-mock:#ffd18c;
+    --src-real-bg:rgba(142,226,202,.18); --src-mock-bg:rgba(255,209,140,.18);
+  }
+  /* 暗色搜索框对比度 */
+  #q, .rp-input { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); color: #e8e8f0; }
+  #q:focus, .rp-input:focus { border-color: var(--accent,#e5484d); box-shadow: 0 0 0 2px rgba(229,72,77,0.2); }
+  /* 键盘焦点可见性 */
+  .item:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent,#e5484d); outline-offset: 2px; }
+  .rp-card:focus-visible { outline: 2px solid var(--accent,#e5484d); outline-offset: 2px; }
+  .b-chip:focus-visible { outline: 2px solid var(--accent,#e5484d); outline-offset: 2px; }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+  /* 视觉隐藏但保留给读屏 —— 这个类之前压根没定义，
+     于是路线对话框里两个 <label class="sr-only">出发点 / 到达点</label>
+     当成普通文字直接显示出来，在 .rp-row(flex) 里各占 ~45px：
+       · 输入框被从 218px 挤到 172px，placeholder「出发点，如：黄鹤楼」直接被截断；
+       · 整列内容右移，和面板右边缘对不齐。
+     标准做法：不 display:none（那样读屏也读不到），而是移出可视区且压成 1px。 */
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+  /* 主字体换成微软雅黑。原本堆了两条 html,body 规则（51 / 54），下面 54 那条是
+     上一版简化时漏删的「重复声明」，把上面那条的字体特性（ss03）覆盖掉了，
+     而且自己的字体栈更短（缺 Microsoft YaHei UI），Mac 还会被 PingFang 抢到第一。
+     现在统一为一条，Windows 优先 Microsoft YaHei，Mac 顺位落到 PingFang SC，
+     都不在的时候回到 system-ui / sans-serif，不至于乱字。 */
+  html,body{margin:0;height:100%;font-family:"Microsoft YaHei","微软雅黑",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei UI",system-ui,sans-serif;color:var(--ink);overflow:hidden;font-feature-settings:"tnum","ss01","ss03";font-variant-numeric:tabular-nums}
+  /* 缩放数字、坐标、距离等数字使用等宽 */
+  .zoom-level,.live-status,.heat-scale .hs-txt{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  /* 上面已统一 html,body 字体栈，这里删掉遗留的重复声明
+     （上一行那一行是简化时漏删的，删掉后 ss03 字体特性才能生效） */
+  body{
+    /* 性能优化：4 个 radial-gradient 合并为 1 个 conic-gradient（单次绘制 + GPU 友好） */
+    /* 这里原来还有一条 background-attachment: fixed，已删除。
+       本页面 html,body 都是 overflow:hidden，文档本身永远不滚动，
+       fixed 在这里唯一的作用就是给所有内部滚动容器（.list / .menu / .rp-cards /
+       .q-list / .rp-tip）制造问题：
+         1) 背景被钉死在视口原点，内部容器滚动时内容动了、背景不动，
+            半透明玻璃后面那几团 conic 色斑就一直原地不动 —— 看着就是「内容重复」；
+         2) backdrop-filter 采样固定背景时取的是旧偏移，滚动中会出现拖影/重影；
+         3) 每次滚动都要重绘整页背景，移动端直接掉帧。
+       body 的盒子本来就等于视口，去掉 fixed 后静止时画面一模一样。 */
+    background:linear-gradient(135deg, #f5f7fa 0%, #e8edf5 50%, #f0e8f5 100%), conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(110,168,255,.20) 30deg, transparent 90deg, rgba(186,153,255,.18) 150deg, transparent 210deg, rgba(255,180,210,.16) 270deg, transparent 330deg);
+  }
+  body.dark{
+    background:linear-gradient(135deg, #0f131a 0%, #161b25 50%, #1a1e28 100%), conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(110,168,255,.16) 30deg, transparent 90deg, rgba(186,153,255,.12) 150deg, transparent 210deg, rgba(255,180,210,.10) 270deg, transparent 330deg);
+  }
+  /* 紫晶的脸：深紫底 + 品红/紫罗兰极光。色斑浓度比夜间高一档（.26~.30 vs .10~.16），
+     这是这张皮肤和夜间唯一的本质区别 —— 夜间求安静，紫晶求有存在感。
+     和上面 body.dark 同特异性，靠源码顺序取胜，所以必须留在这个位置。 */
+  body.violet{
+    background:linear-gradient(135deg, #2e1a52 0%, #3d1f66 36%, #4c1c60 64%, #291849 100%), conic-gradient(from 18deg at 48% 44%, transparent 0deg, rgba(198,92,255,.30) 42deg, transparent 108deg, rgba(255,88,172,.26) 168deg, transparent 228deg, rgba(124,94,255,.28) 288deg, transparent 348deg);
+  }
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}   /* 键盘焦点提示，与 :hover 分离 */
+  body.dark :focus-visible{outline-color:#34d399}
+  /* 宽度用 100% 而不是 100vw：100vw 含经典滚动条宽度，比可视区宽，
+     配合 body overflow:hidden 右边会被裁掉一截，右侧浮层跟着错位。 */
+  #app{display:flex;height:100vh;height:100dvh;width:100%}
+
+  /* ---------- 侧栏 ---------- */
+  /* 主玻璃面板：模糊半径从 12px 砍到 10px。
+     12 → 10 在视觉上几乎无差，但高斯模糊本身是 O(像素数 × 半径)，
+     侧栏整列常驻，砍 17% 半径直接等于砍 30%+ 移动端 GPU 时间。 */
+  #panel{width:320px;min-width:320px;height:100%;background:linear-gradient(180deg, rgba(255,255,255,.85) 0%, rgba(252,253,255,.72) 50%, rgba(248,250,252,.8) 100%);backdrop-filter:blur(10px) saturate(1.5);-webkit-backdrop-filter:blur(10px) saturate(1.5);border-right:1px solid transparent;font-family:"Microsoft YaHei","微软雅黑",-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei UI",system-ui,sans-serif;font-size:13px;display:flex;flex-direction:column;z-index:1200;box-shadow:0 1px 2px rgba(15,30,60,.08), 8px 0 40px rgba(15,30,60,.15), inset 1px 0 0 rgba(255,255,255,.95), inset -1px 0 0 rgba(255,255,255,.18);transition:width .28s ease,min-width .28s ease;position:relative;overflow:hidden;background-clip:padding-box}
+/* 水晶棱镜边框 — 右侧蓝→白→粉→紫渐变模拟光线色散（保留，这是玻璃材质的主体观感） */
+#panel::after{content:'';position:absolute;top:0;right:-1px;bottom:0;width:2px;background:linear-gradient(180deg, rgba(167,199,255,0) 0%, rgba(167,199,255,.95) 25%, rgba(255,255,255,1) 50%, rgba(255,200,225,.9) 75%, rgba(167,199,255,0) 100%);pointer-events:none}
+body.dark #panel{background:linear-gradient(180deg, rgba(40,46,56,.9),rgba(35,40,50,.78),rgba(30,34,42,.85));border-right-color:rgba(255,255,255,.1);box-shadow:0 1px 2px rgba(0,0,0,.3), 8px 0 40px rgba(0,0,0,.6), inset 1px 0 0 rgba(255,255,255,.12)}
+  .p-head{padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.55);background:linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.4) 60%, rgba(245,247,250,.45) 100%);backdrop-filter:blur(10px) saturate(1.4);-webkit-backdrop-filter:blur(10px) saturate(1.4);position:relative}
+.p-head::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,0));pointer-events:none;border-radius:0 0 6px 6px}
+  .p-head::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg, transparent, rgba(0,0,0,.12), transparent)}
+  body.dark .p-head{background:linear-gradient(180deg, rgba(45,50,60,.55), rgba(35,40,50,.32));border-bottom-color:rgba(255,255,255,.1)}
+  .p-head h1{font-size:19px;margin:0 0 3px;letter-spacing:.5px;color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.5)}
+  .p-head .sub{font-size:12px;color:var(--muted);line-height:1.5}
+  .p-head .weather{margin-top:7px;font-size:12px;color:#0b5d3b;background:rgba(240,250,244,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(207,232,219,.85);border-radius:8px;padding:4px 8px;line-height:1.5}
+  .p-head .note{margin-top:7px;font-size:11px;color:#8a5a00;background:rgba(255,246,230,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(245,217,168,.8);border-radius:7px;padding:5px 8px;line-height:1.5}
+  .filters{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.3);/* 模糊 16→12（侧栏工具栏常驻） */backdrop-filter:blur(12px) saturate(1.4);-webkit-backdrop-filter:blur(12px) saturate(1.4)}
+  /* 筛选折叠成 3 个图标：原来是 4 组「label + chips」常驻，把列表挤到只剩一小条 */
+  .f-row{display:flex;align-items:center;gap:6px}
+  .f-row .q-wrap{flex:1;min-width:0;margin-top:0}
+  .f-toggle{flex:none;width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.5);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:background .15s,border-color .15s}
+  .f-toggle:hover{background:rgba(255,255,255,.8)}
+  .f-toggle.active{background:rgba(11,122,75,.85);border-color:rgba(255,255,255,.7);color:#fff}
+  .f-panel{padding-top:7px}
+  /* 工具菜单：收纳原 .ctl 常驻工具条与图例 */
+  .menu{position:absolute;top:52px;right:12px;z-index:1250;width:190px;max-height:min(70vh,560px);overflow-y:auto;padding:8px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(248,250,252,.85));backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);border:1px solid rgba(255,255,255,.8);box-shadow:0 6px 24px rgba(15,30,60,.18);display:flex;flex-direction:column;gap:3px}
+  .menu[hidden]{display:none}
+  .menu-head{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.4px;padding:6px 8px 3px}
+  .menu-item{display:flex;align-items:center;gap:7px;width:100%;padding:7px 9px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--ink);font-size:13px;font-family:inherit;text-align:left;cursor:pointer;transition:background .15s,border-color .15s}
+  .menu-item:hover{background:rgba(255,255,255,.85);border-color:rgba(255,255,255,.9)}
+  .menu-item.active,.menu-item[aria-pressed="true"]{background:rgba(11,122,75,.85);color:#fff;border-color:rgba(255,255,255,.7)}
+  .menu .legend{margin:2px 0 4px}
+
+  /* ---- 悬停反馈（原来的鼠标光斑已整体移除）----
+     旧方案是 JS 按 4% 量化后往这 11 个类写 --px/--py，靠 ::before 的径向渐变
+     跟随鼠标表达「命中」。问题出在半径与控件尺寸不匹配：.zoom-btn / .pp-close
+     只有 24px，.rp-mode 也才 28px，而渐变直径 16~26px，几乎盖满整个控件，
+     白色 50%~75% 的中心直接把 emoji 和灰字冲淡 —— 看上去就是「一层白光压在
+     功能按钮上面」，比没有反馈更糟；深色模式还得再单独把光斑调暗一遍。
+     现在统一交给控件自己的 hover 背景 / 位移 / 阴影，命中与否一眼可辨，
+     也少一层合成和一次 mousemove 重绘。
+     position:relative 仍要保留：.chip / .legend 的棱镜描边在 ::after 上是绝对定位。 */
+  :where(.btn,.chip,.b-chip,.rp-mode,.menu-item,.rp-card,.item-add,.pp-close,.zoom-btn,.zoom-help,.legend){position:relative}
+  :where(.rp-mode,.b-chip):hover{background:rgba(255,255,255,.75)}
+  :where(.zoom-btn,.zoom-help,.pp-close):hover{background:rgba(255,255,255,.8)}
+  /* .legend 原先只靠光斑给反馈，去掉之后补一条底色，否则完全看不出鼠标停在哪 */
+  .legend:hover{background:linear-gradient(180deg, rgba(255,255,255,.9) 0%, rgba(248,250,252,.72) 50%, rgba(240,243,247,.76) 100%)}
+  body.dark .menu{background:linear-gradient(180deg, rgba(40,46,56,.92), rgba(32,37,46,.88));border-color:rgba(255,255,255,.12);color:#fff}
+  body.dark .menu-item:hover{background:rgba(55,62,75,.9)}
+  .p-head-row{display:flex;align-items:center;gap:8px}
+  .p-head-row h1{margin:0;flex:1;min-width:0}
+  .mi-btn{flex:none;width:28px;height:28px;border-radius:9px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.55);color:var(--ink);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .mi-btn:hover{background:rgba(255,255,255,.9)}
+  body.dark .mi-btn{background:rgba(40,46,56,.7);border-color:rgba(255,255,255,.12);color:#fff}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  /* 区域·地铁面板（cf-zone）里两行 chips 的间隔 */
+  .f-panel .chips + .chips{margin-top:6px}
+  /* 同 .item：只在 :active 那一瞬间缩一下，不需要常驻图层。
+     留着 will-change 会让每个 chip 常驻一个合成层，还和上面的 backdrop-filter 抢图层预算。 */
+/* spring 缓动换成 ease（小控件上的反向运动不值这个帧数）；
+     backdrop-filter 摘掉（小到模糊基本看不见，反而每个 chip 都要新合成层 + 模糊整张地图）。
+     玻璃质感靠它自身的渐变 + 内层 ::after 棱镜边来撑。
+     渐变透明度从 .65/.5/.55 抬到 .78/.66/.7，补偿失去的 backdrop 模糊。 */
+  .chip{border-radius:14px;padding:3px 10px;font-size:12px;cursor:pointer;user-select:none;transition:transform .15s ease, background-color .15s ease, color .15s ease;box-shadow:inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.35), 0 3px 8px rgba(15,30,60,.06);position:relative;color:var(--ink);overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,.78) 0%, rgba(248,250,252,.66) 50%, rgba(240,243,247,.7) 100%);border:1px solid transparent;background-clip:padding-box}
+.chip::after{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg, rgba(167,199,255,.75) 0%, rgba(255,255,255,.95) 30%, rgba(255,200,225,.65) 55%, rgba(255,255,255,.95) 80%, rgba(186,165,255,.75) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.85}
+.chip:hover{transform:translateY(-1px) scale(1.04);box-shadow:inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.4), 0 6px 14px rgba(15,30,60,.12)}
+.chip:active{transform:translateY(0) scale(.97);transition:transform .12s cubic-bezier(.4,0,.2,1)}
+  .chip.active{background:rgba(11,122,75,.85);color:#fff;border-color:rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(11,122,75,.35)}
+  /* 摘掉 backdrop-filter（搜索框就一个，模糊地图收益低）；bg .5→.7 补偿 */
+  .search{width:100%;margin-top:6px;padding:6px 10px;font-size:13px;border:1px solid rgba(255,255,255,.75);border-radius:9px;outline:none;background:rgba(255,255,255,.7);color:var(--ink)}
+  .search::placeholder{color:var(--muted)}
+  .search:focus{border-color:var(--accent)}
+  .list{flex:1;overflow-y:auto;padding:6px 8px}
+  /* 这里原来有 will-change:transform，已删除。
+     .item 只在 :hover 时做 translateX(3px) scale(1.005) 一下，触屏根本没有 hover，
+     根本不需要常驻合成层；但列表一次就是 50 行 ×50 个图层，
+     在手机上直接把图层预算吃光，滚动时掉帧并出现重影（看起来像内容重复）。
+     transition 保留，hover 动画照旧。 */
+  /* spring/.34 缓动换成 ease；去掉 box-shadow 过渡（box-shadow 模糊半径变化很贵）；
+     duration 从 .35s 砍到 .15s。hover 视觉差别极小但帧数少一半以上。 */
+  .item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:10px;cursor:pointer;transition:transform .15s ease, background .15s ease, border-color .15s ease;border:1px solid transparent}
+  /* :hover / .sel 摘掉 backdrop-filter（hover 临时触发也会强制重新模糊整张地图）；
+     渐变/border 透明度上调一档补偿：.55/.4→.72/.58, .6→.78 */
+  .item:hover{background:linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.58));border-color:rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(0,0,0,.06);transform:translateX(3px) scale(1.005)}
+  .item.sel{background:rgba(230,240,234,.78);border-color:rgba(188,217,200,.9)}
+  /* it-emoji 摘掉 backdrop-filter（小头像 + 模糊，视觉收益微、每次重排都重模糊） */
+  /* 正文三行合计约 62px，34px 的头像浮在正中间会显得小而轻，抬到 38px 配平。
+     高度仍小于正文，不会反过来撑高卡片。 */
+  .it-emoji{width:38px;height:38px;flex:none;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;background:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.8);box-shadow:0 1px 3px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.7)}
+  .it-body{flex:1;min-width:0}
+  /* ---- 卡片内三行的排版与间距 ----
+     原来的值是逐个组件随手加的，没有共同尺度，三处对不上：
+       · .it-name / .it-sub / .tag 全都没写 line-height，各自继承 body 的值。
+         中文没有 ascender/descender，字面框又比拉丁小，继承下来的行高忽大忽小，
+         卡片高度会随文字内容抖。这里按「字号 × 1.35」把行高钉死。
+       · .tag 是 10px 中文，微软雅黑下 10px 汉字的字面框实际不到 9px，
+         「人流高」「免预约」这种笔画多的字已经糊了 —— 提到 11px。
+       · .it-src 的 margin-left:4px 叠在 .it-tags 的 gap:4px 上，实际间距 8px，
+         而相邻两个 .tag 之间只有 4px。同一个容器里两种间距，是这屏最刺眼的不一致。
+         margin-left 直接删掉，间距统一交给 gap。 */
+  .it-name{font-size:14px;line-height:1.35;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .it-sub{font-size:12px;line-height:1.3;color:var(--muted);margin-top:2px}
+  /* min-height:45px = 2 行 × 20px(标签实测高) + 1 个 5px 行距 —— 用浏览器量过。
+     为什么需要它：标签是 flex-wrap，换行点取决于「有几个标签 + 每个多宽」，
+     没有结构保证。目前 50 张卡全是 4~5 个标签，在 .it-tags 的 187px 宽度下
+     必然换行成 2 行，所以实测卡片高度是齐的（相邻卡片间距一律 156px）。
+     但这只差一个数据条件就会散架：某个景点若全天开放（没有「营业中/已闭馆」）
+     又免预约（没有「需预约/免预约」），标签会掉到 3 个 —— 3 个放得下 187px，
+     变成 1 行，卡片立刻比邻居矮 25px，列表节奏就乱了。
+     给个 min-height 把下限钉在 2 行，1 行内容也占满同样高度：
+     现在零视觉代价（没有卡片是 1 行），但对数据变化免疫。 */
+  .it-tags{display:flex;gap:5px;margin-top:5px;flex:none;flex-wrap:wrap;min-height:45px}
+  .tag{font-size:11px;line-height:1.35;padding:2px 7px;border-radius:8px;color:#fff;font-weight:600;border:1px solid rgba(255,255,255,.4);box-shadow:0 1px 3px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.4);white-space:nowrap;flex:none}
+  .t-hi{background:var(--red)} .t-mid{background:var(--orange)} .t-lo{background:var(--green)}
+  .t-res{background:#6e56cf} .t-tick{background:#4f6f8f}
+  .it-src{
+    font-size:11px; line-height:1.35;
+    padding:2px 7px;
+    border-radius:8px;
+    font-weight:500;
+    white-space:nowrap;
+    display:inline-flex; align-items:center; gap:3px;
+    flex:none;
+  }
+  .it-src::before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%}
+  .it-src.real{background:var(--src-real-bg);color:var(--src-real)}
+  .it-src.real::before{background:var(--src-real)}
+  .it-src.est{background:var(--src-mock-bg);color:var(--src-mock)}
+  .it-src.est::before{background:var(--src-mock)}
+  .it-src.cache{background:rgba(194,65,12,.14);color:#c2410c}
+  .it-src.cache::before{background:#c2410c}
+  .empty{padding:24px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* 人流优化：弹窗择时建议 + 未来几小时趋势 */
+  .c-advice{margin-top:6px;font-size:12px;opacity:.92;line-height:1.5}
+  .c-trend,.tr-wrap{display:flex;gap:3px;align-items:flex-end;margin-top:6px}
+  .tr-col{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:16px}
+  .tr-bar{width:13px;border-radius:2px 2px 0 0;transition:height .2s}
+  .tr-col.now .tr-bar{box-shadow:0 0 0 1.5px #fff}
+  .tr-col.now .tr-h{color:#fff;font-weight:700}
+  .tr-h{font-size:9px;color:#9aa;white-space:nowrap}
+  .tr-note{font-size:9px;color:#9aa;align-self:center;margin-left:5px;white-space:nowrap}
+  .tag.t-adv{font-weight:500;display:inline-flex;align-items:center;gap:4px;border-color:rgba(255,255,255,.3)}
+  .tag.t-adv::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--muted)}
+  .tag.t-adv.adv-hi{background:rgba(229,72,77,.16);color:var(--adv-hi)} .tag.t-adv.adv-hi::before{background:var(--adv-hi)}
+  .tag.t-adv.adv-mid{background:rgba(245,165,36,.18);color:var(--adv-mid)} .tag.t-adv.adv-mid::before{background:var(--adv-mid)}
+  .tag.t-adv.adv-lo{background:rgba(48,164,108,.16);color:var(--adv-lo)} .tag.t-adv.adv-lo::before{background:var(--adv-lo)}
+  .tag.t-open{background:rgba(48,164,108,.16);color:var(--adv-lo);display:inline-flex;align-items:center;gap:4px;border-color:rgba(255,255,255,.3)} .tag.t-open::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--adv-lo)}
+  .tag.t-off{background:rgba(245,165,36,.18);color:var(--adv-mid);display:inline-flex;align-items:center;gap:4px;border-color:rgba(255,255,255,.3)} .tag.t-off::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--adv-mid)}
+  .tag.t-closed{background:rgba(229,72,77,.16);color:var(--adv-hi);display:inline-flex;align-items:center;gap:4px;border-color:rgba(255,255,255,.3)} .tag.t-closed::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--adv-hi)}
+
+  /* 人流优化：侧栏「现在适合去 / 建议避开」榜单 */
+  .board{padding:10px 12px 0;font-size:12px}
+  .b-row{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+  .b-t{font-weight:700;font-size:12px}
+  .b-t.ok{color:#30a46c}
+  .b-t.warn{color:#e5484d}
+  .b-c{display:flex;flex-wrap:wrap;gap:5px}
+  .b-chip{font-size:11px;padding:3px 8px;border-radius:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:var(--text);cursor:pointer;transition:.15s}
+  .b-chip:hover{background:rgba(255,255,255,.22)}
+  .b-empty{color:var(--muted);font-size:11px}
+
+  /* 添加到路线的「+」按钮 */
+  .item-add{flex:none;width:26px;height:26px;border-radius:50%;border:1px solid rgba(11,122,75,.4);background:rgba(11,122,75,.08);color:var(--accent);font-size:17px;font-weight:600;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+  .item-add:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .item-add.added{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* 收藏星标（⭐，与「+ 进路线」并存） */
+
+  /* ---------- 地图 ---------- */
+  /* min-height:0 不能省：mapwrap 是 #app(display:flex) 的 flex item，
+   而 flex item 默认 min-height:auto —— 内容最小高度会把它顶得比视口还高。
+   TMap 的 canvas 实测比容器高一截（887 vs 720），于是 mapwrap 跟着溢出，
+   所有 bottom 定位的浮层一起跑到屏幕外面：.measure-panel 的「路程 / 直线」读数
+   被视口底边切掉，看上去就像「点了测距没反应」。min-width / overflow 同理。 */
+  #mapwrap{flex:1;position:relative;min-height:0;min-width:0;overflow:hidden}
+  #map{width:100%;height:100%}
+  /* 拖动地图期间：覆盖物层不吃指针事件、hover 光影全部压制。
+     否则拖动过程中途经的 pin / 标签会一路被点亮（看起来像「碰到了文字」），
+     而且 50 个覆盖物同时进入 hover 会带来一轮额外的样式重算与重绘。
+     注意这里不能带任何会接收指针事件的层：mousedown 冒泡到 #mapwrap 时才加上 map-dragging，
+     而 click / mouseup 是 mousedown 之后才派发的 —— 等它们到达时那些元素已经不接收指针事件，
+     于是「点 pin 打开详情 / 附近景点列表」会没反应。 */
+  body.map-dragging .spotpin,
+  body.map-dragging .sp-name{pointer-events:none !important}
+  body.map-dragging .sp-pin:hover{transform:none}
+  body.map-dragging .sp-pin::before{opacity:0 !important}
+
+  /* 单点标记 DOMOverlay */
+  .spotpin{position:relative;cursor:pointer;z-index:0;width:42px;height:42px}
+.tieWrap{position:absolute;top:45px;left:50%;transform:translateX(-50%);pointer-events:none;white-space:nowrap;z-index:1}
+  /* 聚合气泡层（canvas）已下线，相关选择器一并删除；这里曾定义 .clusterBubble */
+  /* 性能优化：删除旧版 .sp-pin（被弹性版覆盖），避免重复样式解析 */
+  /* pin / 标签 —— 开销瘦身：
+   原来 50 个 pin 各算 6 层 box-shadow（3 层 inset）+ ::after 双色发光 + ::before 球面高光；
+   标签再加 6 层阴影 + backdrop-filter。而 .sp-name 是 pointer-events:none 的，
+   永远不可能进入 hover 状态 —— 那条 60px 径向高光默认值还是 --hover:1，
+   等于 50 个标签平时就各画一个渐变，纯属白付。
+   现在：pin 只留 1 层阴影 + 1 个静态渐变（仅 hover 出现）；标签去掉
+   backdrop-filter 与全部 ::before，一次静态绘制到位。 */
+  /* spring 缓动换成 ease（translateY 3px 那种微小动作用 ease 几乎无差） */
+  .sp-pin{position:relative;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2.5px solid transparent;font-size:21px;line-height:1;background-clip:padding-box;box-shadow:0 2px 6px rgba(0,0,0,.32);transition:transform .12s ease}
+  .sp-pin::before{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:2;background:radial-gradient(circle at 50% 30%, rgba(255,255,255,.45), rgba(255,255,255,0) 70%);opacity:0;transition:opacity .12s linear}
+  .sp-pin:hover{transform:translateY(-2px) scale(1.12)}
+  .sp-pin:hover::before{opacity:1}
+  .sp-pin:active{transform:translateY(-1px) scale(1.05)}
+.sp-name{position:absolute;top:48px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.93);color:#1a1f2e;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;white-space:nowrap;line-height:1.4;max-width:140px;overflow:hidden;text-overflow:ellipsis;border:1px solid rgba(0,0,0,.06);box-shadow:0 1px 4px rgba(0,0,0,.24);letter-spacing:.3px;z-index:1;pointer-events:none}
+body.dark .sp-name{background:rgba(15,18,24,.9);color:#fff;border-color:rgba(255,255,255,.14);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  /* 摘掉 backdrop-filter：地图上几十个 pin 的小徽标各自模糊一次地图，纯亏 */
+  .sp-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;border:1px solid rgba(255,255,255,.65);box-shadow:0 1px 3px rgba(0,0,0,.3), inset 0 .5px 0 rgba(255,255,255,.5);white-space:nowrap;line-height:1.5}
+  .sp-res-need_reserve{background:var(--res-bg);color:var(--res-text)}
+  .sp-res-need_ticket{background:var(--tick-bg);color:var(--tick-text)}
+
+
+  /* 自建弹窗（液态玻璃）——完全自定义，无 TMap 默认容器 */
+  .spot-popup{position:absolute;top:0;left:0;z-index:3000;will-change:transform;pointer-events:none;display:none}
+  /* 弹窗模糊 14→10（252px 宽的小弹窗，玻璃感差异肉眼几乎看不出） */
+  .pp-inner{pointer-events:auto;box-sizing:border-box;width:252px;background:linear-gradient(180deg, rgba(255,255,255,.65) 0%, rgba(250,251,253,.55) 50%, rgba(245,247,250,.65) 100%);backdrop-filter:blur(10px) saturate(1.5);-webkit-backdrop-filter:blur(10px) saturate(1.5);border-radius:16px;padding:13px 15px;box-shadow:0 8px 24px rgba(0,0,0,.28);border:1px solid rgba(0,0,0,.06);font-size:13.5px;line-height:1.55;overflow-wrap:break-word;word-break:break-word;white-space:normal;position:relative;overflow:hidden;background-clip:padding-box;will-change:transform}
+/* 原来这里有 4 条伪元素规则、其中 2 条互相覆盖（191 被 194 覆盖、192 被 193 覆盖），
+   即 mask-composite 渐变边框和径向高光从来没生效过。合并成一条顶部高光。 */
+  .pp-inner::before{content:'';position:absolute;top:0;left:0;right:0;height:40px;border-radius:16px 16px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.32) 0%,rgba(255,255,255,0) 100%);pointer-events:none}
+  /* 窄屏：弹窗不超屏，保留两侧留白 */
+  @media (max-width:480px){
+    .pp-inner{width:min(252px,92vw)}
+  }
+  /* 摘掉 backdrop-filter：14×14 小三角上模糊 20px 地图基本看不见；bg .6→.8 补偿 */
+  .pp-arrow{position:absolute;left:50%;bottom:-7px;margin-left:-7px;width:14px;height:14px;background:rgba(255,255,255,.8);border-right:1px solid rgba(255,255,255,.7);border-bottom:1px solid rgba(255,255,255,.7);transform:rotate(45deg);box-shadow:4px 4px 12px rgba(0,0,0,.12);pointer-events:none}
+  /* 摘掉 backdrop-filter：22×22 关闭按钮上模糊收益低；bg .55→.78 补偿 */
+  .pp-close{position:absolute;top:9px;right:9px;z-index:2;width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.78);color:var(--muted);font-size:12px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .pp-close:hover{background:#e5484d;color:#fff;border-color:#e5484d}
+  body.dark .pp-close{background:rgba(40,45,56,.6);border-color:rgba(255,255,255,.18);color:var(--muted)}
+  body.dark .pp-close:hover{background:#e5484d;color:#fff;border-color:#e5484d}
+  .iw .c-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:7px;line-height:1.4;overflow-wrap:break-word;word-break:break-word;white-space:normal;color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.6);padding-right:22px}
+  .iw .c-cat{font-size:11px;color:var(--muted);margin:2px 0 8px}
+  .iw .c-row{display:flex;font-size:12.5px;margin:4px 0;line-height:1.5;overflow-wrap:break-word;word-break:break-word;white-space:normal;color:var(--ink)}
+  .iw .c-row b{flex:none;width:46px;color:var(--muted);font-weight:500}
+  .iw .c-row span{flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word;white-space:normal}
+  .iw .tier{font-weight:700}
+  .iw .t-hi{color:var(--red)} .iw .t-mid{color:var(--orange)} .iw .t-lo{color:var(--green)}
+  body.dark .iw .t-mid{color:#ffb054}   /* 深色弹窗里中档人流用亮橙，避免深橙文字隐形 */
+  .iw .peak{color:#8a5a00}
+  .iw .c-tip{margin-top:9px;padding:7px 9px;background:rgba(240,250,244,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(207,232,219,.9);border-radius:9px;font-size:12px;line-height:1.5;color:#0b5d3b;overflow-wrap:break-word;word-break:break-word;white-space:normal}
+
+  /* 右上角控件 */
+  /* 摘掉 backdrop-filter（右上角小按钮组，模糊收益低）；spring 换 ease + 去掉 box-shadow 过渡 */
+  .btn{background:linear-gradient(180deg, rgba(255,255,255,.85) 0%, rgba(248,251,253,.72) 50%, rgba(240,243,247,.78) 100%);border-radius:11px;padding:6px 11px;font-size:12px;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,60,.08), 0 6px 18px rgba(15,30,60,.12), inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.4), inset 1px 0 0 rgba(255,255,255,.55), inset -1px 0 0 rgba(255,255,255,.18);position:relative;color:var(--ink);transition:transform .15s ease, background .15s ease;overflow:hidden;border:1px solid transparent;background-clip:padding-box}
+/* 水晶棱镜边框 — 用渐变边框模拟光线色散（普鲁斯特蓝→粉） */
+.btn::after{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg, rgba(167,199,255,.85) 0%, rgba(255,255,255,.95) 25%, rgba(255,200,225,.7) 50%, rgba(255,255,255,.95) 75%, rgba(186,165,255,.85) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.85}
+/* 双光源高光：左上方 + 右上方两束点光叠加（真实玻璃在两个倾斜光源下的反射） */
+.btn:hover{transform:translateY(-2px) scale(1.025);box-shadow:0 1px 2px rgba(15,30,60,.1), 0 14px 28px rgba(15,30,60,.18), inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.4), inset 1px 0 0 rgba(255,255,255,.65), inset -1px 0 0 rgba(255,255,255,.22)}
+/* 摘掉 box-shadow 过渡：box-shadow 模糊半径变化每一帧都要重新光栅化阴影，
+   在触屏 :active 触发时（按下立刻有反馈）会跑 250ms 的 4 段 shadow 动画。
+   保留 transform 过渡（按下回弹仍然有手感），shadow 直接切。 */
+.btn:active{transform:translateY(0) scale(.975);box-shadow:0 1px 2px rgba(15,30,60,.06), 0 4px 10px rgba(15,30,60,.1), inset 0 2px 4px rgba(0,0,0,.06), inset 0 -.5px 0 rgba(255,255,255,.5);transition:transform .12s ease}
+.btn:active{transform:translateY(0);box-shadow:0 4px 12px rgba(15,30,60,.08), inset 0 2px 4px rgba(0,0,0,.05)}
+  .btn:hover{background:rgba(255,255,255,.95)}
+  .legend{background:linear-gradient(180deg, rgba(255,255,255,.72) 0%, rgba(248,250,252,.5) 50%, rgba(240,243,247,.55) 100%);backdrop-filter:blur(12px) saturate(1.8);-webkit-backdrop-filter:blur(12px) saturate(1.8);border-radius:12px;padding:9px 12px;font-size:12px;box-shadow:0 1px 2px rgba(15,30,60,.08), 0 4px 14px rgba(15,30,60,.1), inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.35), 0 0 8px rgba(167,199,255,.18), 0 0 12px rgba(255,200,225,.15);line-height:1.7;position:relative;overflow:hidden;border:1px solid transparent;background-clip:padding-box}
+.legend::after{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg, rgba(167,199,255,.8) 0%, rgba(255,255,255,.95) 25%, rgba(255,200,225,.65) 50%, rgba(255,255,255,.95) 75%, rgba(186,165,255,.8) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.8}
+.legend .lg{display:inline-flex;align-items:center;gap:5px;margin-right:12px}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block;box-shadow:0 0 6px currentColor,0 0 12px currentColor}
+  .lg-res{display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:11px;color:var(--muted)}
+  .heat-scale{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--muted)}
+  .heat-scale .hs-bar{display:inline-block;width:96px;height:6px;border-radius:3px;background:linear-gradient(90deg,#30a46c,#c2410c,#e5484d);box-shadow:0 0 6px rgba(0,0,0,.18)}
+
+  #toggle{display:none}
+  @media (max-width:820px){
+    #panel{position:absolute;left:0;top:0;bottom:0;transform:translateX(-100%);transition:.25s;box-shadow:0 0 30px rgba(0,0,0,.25);width:min(320px,88vw);min-width:0}
+    #panel.open{transform:translateX(0)}
+    #toggle{display:inline-flex;align-items:center;gap:5px;position:absolute;top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));z-index:1400}
+    /* 双类提高特异性（0,2,0），压过后面 402 行那条 .route-panel{top:12px}。
+       之前这条写的是单类，而它所在的媒体查询又排在基础规则**前面**，
+       同优先级下后者胜出 → 窄屏时 top 被覆盖回 12px，面板整个压到 ☰ 按钮上，
+       侧栏根本点不开。顺序不能当护身符，这里用特异性钉死。 */
+    .route-panel.route-panel{top:calc(12px + env(safe-area-inset-top) + 40px);width:calc(100vw - 24px)}
+    /* 侧栏是抽屉，开着的时候必须压过路线面板（1300、全宽），
+       否则侧栏顶部被盖住，☰ 工具菜单那几项完全点不到。
+       层级依据是 body.panel-open —— app.js 点 #toggle 时同步打上的。 */
+    body.panel-open #panel{z-index:1500}
+    /* 侧栏已经打开，左上角那个浮动的 ☰ 就该让位，别压在标题「武汉景点地图」上 */
+    body.panel-open #toggle{display:none !important}
+    /* 抽屉打开时，路线对话框必须让位。
+       层级上抽屉(1500) 高于对话框(1300)，所以之前侧栏整个压在对话框上面，
+       「出发点 / 到达点 / 查询路线」那几行被白玻璃盖住，点都点不到 ——
+       用户报的「侧栏盖住对话框」就是这条。
+       这里不靠层级硬压，而是把对话框推到抽屉右边、收窄到剩下的宽度：
+       对话框里那行「📍 途经景点（点左侧列表 + 添加）」本来就要求
+       侧栏列表和路线对话框同时在场，关掉任何一个都干不成这件事。
+       抽屉宽 min(320px,88vw)，左右各留 12px，剩余 = 100vw - 抽屉宽 - 24px。 */
+    @media (min-width:604px){
+      body.panel-open .route-panel.route-panel{
+        left:calc(min(320px, 88vw) + 12px);
+        width:calc(100vw - min(320px, 88vw) - 24px)}
+    }
+    /* 604px 以下剩下的宽度已经装不下 260px 的对话框（剩下的不足 260），
+       这时只能让抽屉优先，对话框先让出来，别挤成一条缝。 */
+    @media (max-width:603px){
+      body.panel-open .route-panel.route-panel{display:none}
+    }
+    /* 工具菜单本来是按「贴在侧栏右边缘」摆的（.menu 是 position:absolute; right:12px，
+       父容器是 mapwrap）。宽屏时侧栏占左侧、菜单贴右边，正好；窄屏下侧栏变成盖在地图上的
+       抽屉，right:12px 就把菜单整个甩到抽屉外面去了，而且它 z-index 1250 还低于路线面板 1300，
+       上半截被压住 —— 「测距 / 回正北 / 复位视图」那几项根本点不到。
+       窄屏改成贴左、并抬到所有浮层之上。 */
+    .menu{left:12px;right:auto;top:64px;z-index:1510}
+  }
+
+  /* ---------- 可伸缩侧栏 ---------- */
+  #app.panel-collapsed #panel{width:0;min-width:0;border-right:none;box-shadow:none;overflow:hidden}
+  #app.panel-collapsed #panel > *{opacity:0;pointer-events:none}
+  /* 摘掉 backdrop-filter（侧栏里两个小切换按钮，blur 8px 地图收益低）；bg .5→.72 补偿 */
+  #collapseBtn{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;font-size:11px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.72);color:var(--muted);transition:background .12s ease, color .12s ease}
+  #collapseBtn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+  /* 同上：摘 backdrop-filter；bg .5→.72 补偿 */
+  #btnRoute{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;font-size:11px;font-weight:600;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.72);color:var(--muted);transition:background .12s ease, color .12s ease, border-color .12s ease;position:relative}
+#btnRoute:hover{background:rgba(255,255,255,.85);color:#0b5d3b;border-color:rgba(11,93,59,.5);transform:translateY(-1px)}
+#btnRoute.active{background:linear-gradient(135deg, #10b981, #34d399);color:#fff;border-color:rgba(11,93,59,.6);box-shadow:0 4px 14px rgba(11,93,59,.35), inset 0 1px 0 rgba(255,255,255,.35);transform:translateY(-1px)}
+  #btnRoute:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+  #btnRoute.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  /* 原来 box-shadow:0 4px 14px rgba(11,93,59,.4) 那一段是「绿色光晕」——整张地图在按钮
+     后面每帧都要重做 14px 模糊。砍掉。 */
+/* #expandBtn 不能再加回 box-shadow 绿光晕（用户已说"去除光效"）。
+   浮动按钮不带 halo 看起来更克制，地图也不需要在按钮后面每帧做 14px 模糊。 */
+  #expandBtn{display:none;align-items:center;gap:5px;position:absolute;top:12px;left:12px;z-index:1500;background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  #app.panel-collapsed #expandBtn{display:inline-flex}
+
+  /* ---------- 夜间模式 ---------- */
+  body.dark{background:var(--bg);color:var(--ink)}
+  body.dark #panel{background:rgba(18,21,26,.66)}
+  body.dark .p-head{background:var(--glass-head);border-bottom:1px solid var(--glass-head-border)}
+  body.dark .p-head h1{text-shadow:0 1px 0 rgba(0,0,0,.4)}
+  body.dark .p-head .weather{background:rgba(20,60,40,.5);border-color:rgba(50,110,80,.6);color:#7fd9a8}
+  body.dark .p-head .note{background:rgba(60,45,10,.5);border-color:rgba(120,95,30,.6);color:#e5c37a}
+  body.dark .filters{background:rgba(30,35,45,.45);border-bottom:1px solid var(--glass-head-border)}
+  body.dark .chip{background:rgba(40,45,56,.6);border-color:var(--glass-border);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  body.dark .chip.active{background:rgba(52,211,153,.85);color:#06281a;border-color:rgba(255,255,255,.25)}
+  body.dark .search{background:rgba(40,45,56,.6);border-color:var(--glass-border);color:var(--ink)}
+  body.dark .search::placeholder{color:var(--muted)}
+  body.dark .item:hover{background:rgba(45,50,62,.5);border-color:var(--glass-border)}
+  body.dark .item.sel{background:rgba(30,60,48,.55);border-color:rgba(52,211,153,.35)}
+  body.dark .it-emoji{background:rgba(40,45,56,.6);border-color:var(--glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  body.dark .item-add{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:#34d399}
+  body.dark .item-add:hover,body.dark .item-add.added{background:#34d399;color:#06281a;border-color:#34d399}
+  body.dark .btn{background:rgba(40,45,56,.7);border-color:var(--glass-border);color:var(--ink)}
+  body.dark .btn:hover{background:rgba(52,58,72,.9)}
+  body.dark .legend{background:rgba(40,45,56,.7);border-color:var(--glass-border);color:var(--ink)}
+  body.dark .pp-inner{background:rgba(30,35,45,.6);border-color:rgba(255,255,255,.18);box-shadow:0 10px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.14)}
+  body.dark .pp-inner::before{background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 20%,rgba(255,255,255,.55) 80%,rgba(255,255,255,0) 100%)}
+  body.dark .pp-inner::after{background:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 100%)}
+  body.dark .pp-arrow{background:rgba(30,35,45,.6);border-color:rgba(255,255,255,.18)}
+  body.dark .iw .c-tip{background:rgba(20,55,40,.55);border-color:rgba(50,110,80,.55);color:#8fd9b0}
+  body.dark .iw .peak{color:#e5c37a}
+  body.dark #map canvas{filter:var(--map-filter)}
+  /* 腾讯 SDK 内部用 canvas 渲染地名/道路标签，CSS 无法直接控制文字字体，
+     但可以让 canvas 元素继承字体声明以加速 SDK 字体回退 */
+  #map canvas{font-family:"Microsoft YaHei","微软雅黑",-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei UI",system-ui,sans-serif}
+  #collapseBtn.dark, body.dark #collapseBtn, body.dark #btnRoute{background:rgba(40,45,56,.6);border-color:var(--glass-border);color:var(--muted)}
+  body.dark #btnRoute:hover, body.dark #btnRoute.active{background:rgba(52,211,153,.85);color:#06281a}
+
+  /* 实时状态徽标 & 路况按钮激活态 */
+  /* 摘掉 backdrop-filter（小徽标 + 模糊地图 8px 收益低） */
+  .live-status{display:inline-block;margin-top:6px;font-size:11px;line-height:1.5;padding:4px 10px;border-radius:9px;border:1px solid;box-shadow:0 2px 6px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.5)}
+  .live-status.ok{color:#0b5d3b;background:rgba(240,250,244,.6);border-color:rgba(207,232,219,.9)}
+  .live-status.sim{color:#8a5a00;background:rgba(255,246,230,.55);border-color:rgba(245,217,168,.85)}
+  body.dark .live-status.ok{color:#7fd9a8;background:rgba(20,60,40,.55);border-color:rgba(50,110,80,.6)}
+  body.dark .live-status.sim{color:#e5c37a;background:rgba(60,45,10,.5);border-color:rgba(120,95,30,.6)}
+  /* warn = 上游配额耗尽。故障态，和 ok(绿)/sim(黄) 都要一眼分得开。
+     浅色 + 夜间各一份，和 ok/sim 的写法保持一致。 */
+  .live-status.warn{color:#8c3d00;background:rgba(255,240,226,.7);border-color:rgba(238,175,120,.95)}
+  body.dark .live-status.warn{color:#f0a86a;background:rgba(70,38,8,.6);border-color:rgba(150,100,35,.7)}
+  .live-status.loading{color:var(--live-loading)}
+  .live-status.loading::before{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--live-loading);border-top-color:transparent;animation:live-spin .8s linear infinite;margin-right:6px;vertical-align:-1px}
+  @keyframes live-spin{to{transform:rotate(360deg)}}
+  .live-refresh{cursor:pointer;border:none;background:transparent;color:inherit;opacity:.7;font-size:14px;margin-left:8px;padding:2px 6px;border-radius:4px;line-height:1}
+  .live-refresh:hover{opacity:1;background:rgba(0,0,0,.08)}
+  .live-refresh:active{transform:scale(.95)}
+  body.dark .live-refresh:hover{background:rgba(255,255,255,.12)}
+  .btn.active{background:rgba(11,122,75,.85);color:#fff;border-color:rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(11,122,75,.35)}
+  body.dark .btn.active{background:rgba(52,211,153,.85);color:#06281a}
+
+  /* ---------- 定位按钮（悬浮于地图右下） ---------- */
+  #locateBtn{position:absolute;right:calc(12px + env(safe-area-inset-right));bottom:calc(70px + env(safe-area-inset-bottom));z-index:1160;width:38px;height:38px;border-radius:10px;font-size:19px;display:flex;align-items:center;justify-content:center}
+  /* ---------- 比例尺 ---------- 
+     自研比例尺已删：TMap 自带 .tmap-scale-control 就在同一锚点，
+     两套叠在一起再加腾讯地图版权块，左下角会糊成三行。
+     需要自定义比例尺时在这里覆盖 SDK 的 .tmap-scale-control 即可。 */
+  /* ---------- 弹窗底部动作按钮 + 官方外链 ---------- */
+  .pp-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .pp-actions button{background:rgba(11,122,75,.9);color:#fff;border:none;border-radius:9px;padding:6px 11px;font-size:12px;cursor:pointer;box-shadow:0 2px 8px rgba(11,122,75,.3)}
+  .pp-actions button:hover{background:rgba(9,110,68,1)}
+  body.dark .pp-actions button{background:rgba(52,211,153,.9);color:#06281a}
+  .pp-actions button.ghost{background:rgba(120,130,145,.14);color:var(--ink);box-shadow:none;border:1px solid rgba(120,130,145,.35)}
+  .pp-actions button.ghost:hover{background:rgba(120,130,145,.24)}
+  .pp-score{font-size:11px;color:#e8a11c;margin-left:4px}
+  .pp-url{display:block;margin-top:8px;font-size:12px;color:#0b7a4b;text-decoration:none}
+  .pp-url:hover{text-decoration:underline}
+  body.dark .pp-url{color:#34d399}
+  /* ---------- 搜索联想下拉 ---------- */
+  .q-wrap{position:relative}
+  /* 搜索下拉 18→12（仅在搜索框聚焦时出现，按需付出） */
+  .q-list{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:1200;background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.88));backdrop-filter:blur(12px) saturate(1.4);border:1px solid rgba(255,255,255,.6);border-radius:13px;box-shadow:0 12px 36px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.9);overflow:hidden;max-height:250px;overflow-y:auto}
+  body.dark .q-list{background:rgba(34,40,52,.96);border-color:rgba(255,255,255,.14)}
+  .q-list .q-empty{padding:9px 11px;font-size:12.5px;color:var(--muted)}
+  .q-item{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:7px 11px;cursor:pointer;color:var(--ink)}
+  .q-item:hover,.q-item.on{background:rgba(11,122,75,.08)}
+  .q-item .q-cat{margin-left:auto;color:var(--muted);font-size:10.5px}
+  .q-item mark{background:none;color:#0b7a4b;font-weight:700}
+  body.dark .q-item mark{color:#34d399}
+  /* ---------- 列表命中文字高亮 ---------- */
+  .list mark{background:none;color:#0b7a4b;font-weight:700}
+  body.dark .list mark{color:#34d399}
+  /* ---------- 聚合气泡点击 → 快捷列表 ---------- */
+  /* 聚合点列表 18→12（仅点击聚合气泡时出现） */
+  .cluster-list{position:absolute;z-index:1180;background:linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.88));backdrop-filter:blur(12px) saturate(1.4);border:1px solid rgba(255,255,255,.7);border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.7);overflow:hidden;min-width:200px;max-width:260px;animation:clIn .15s ease-out}
+  body.dark .cluster-list{background:rgba(30,36,46,.95);border-color:rgba(255,255,255,.15)}
+  @keyframes clIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .cluster-list .cl-head{padding:9px 12px;font-size:12.5px;font-weight:700;background:linear-gradient(90deg,var(--cl-accent,#0b7a4b) 0%,transparent 30%),rgba(255,255,255,.5);border-bottom:1px solid rgba(120,130,145,.18);display:flex;align-items:center;gap:6px}
+  body.dark .cluster-list .cl-head{background:linear-gradient(90deg,var(--cl-accent,#0b7a4b) 0%,transparent 30%),rgba(255,255,255,.06)}
+  .cluster-list .cl-head .cl-title{flex:1}
+  .cluster-list .cl-head .cl-x{margin-left:auto;cursor:pointer;color:var(--muted);font-size:15px;padding:1px 6px;border-radius:6px;transition:.15s}
+  .cluster-list .cl-head .cl-x:hover{background:rgba(229,72,77,.18);color:#e5484d}
+  .cluster-list .cl-c{max-height:240px;overflow-y:auto}
+  .cluster-list .cl-item{display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 12px;cursor:pointer;color:var(--ink);transition:.12s}
+  .cluster-list .cl-item:hover{background:rgba(11,122,75,.1);padding-left:15px}
+  .cluster-list .cl-item .cl-emoji{font-size:16px;flex-shrink:0}
+  .cluster-list .cl-item .cl-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cluster-list .cl-item .cl-crowd{margin-left:auto;font-size:10.5px;color:var(--muted);font-weight:600;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.5)}
+  body.dark .cluster-list .cl-item .cl-crowd{background:rgba(255,255,255,.06)}
+  .cluster-list .cl-item .cl-crowd.t-hi{color:#e5484d;background:rgba(229,72,77,.12)}
+  .cluster-list .cl-item .cl-crowd.t-mid{color:#f5a524;background:rgba(245,165,36,.12)}
+  .cluster-list .cl-item .cl-crowd.t-lo{color:#0b7a4b;background:rgba(11,122,75,.12)}
+
+  /* ---------- 测距面板 ---------- */
+  /* position 只能写一次。这条规则原来在前面写了 position:absolute，末尾又补了一个
+     position:relative —— 后写的赢，于是面板留在文档流末尾当普通块级元素排，
+     而 bottom:28px 对 position:relative 根本不产生定位作用（只做偏移），
+     结果整个面板掉到视口外，「路程 / 直线」读数被屏幕底边切掉，
+     看上去就像「点了测距没反应」。 */
+  /* 测距面板模糊 12→10（按需弹出，砍 17% 半径省 GPU） */
+  .measure-panel{position:absolute;left:12px;bottom:28px;z-index:1150;background:linear-gradient(180deg, rgba(255,255,255,.72) 0%, rgba(248,250,252,.5) 50%, rgba(240,243,247,.55) 100%);backdrop-filter:blur(10px) saturate(1.5);-webkit-backdrop-filter:blur(10px) saturate(1.5);border-radius:14px;padding:9px 12px;box-shadow:0 1px 2px rgba(15,30,60,.08), 0 10px 30px rgba(15,30,60,.18), 0 0 12px rgba(167,199,255,.2), 0 0 18px rgba(255,200,225,.18), inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.35);font-size:12.5px;line-height:1.6;overflow:hidden;border:1px solid transparent;background-clip:padding-box}
+.measure-panel::after{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg, rgba(167,199,255,.8) 0%, rgba(255,255,255,.95) 25%, rgba(255,200,225,.65) 50%, rgba(255,255,255,.95) 75%, rgba(186,165,255,.8) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.85}
+.measure-panel::before{content:'';position:absolute;top:1px;left:10%;right:10%;height:30%;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,.5), transparent);pointer-events:none}
+  .measure-panel .mp-title{font-weight:700;margin-bottom:2px}
+  .measure-panel .mp-row{color:var(--muted)}
+  .measure-panel .mp-row b{color:var(--ink);font-weight:700}
+  .measure-panel .mp-hint{font-size:10.5px;color:var(--muted);opacity:.85;margin-top:2px}
+  body.dark .measure-panel{background:rgba(30,35,45,.65);border-color:rgba(255,255,255,.18);box-shadow:0 6px 24px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12)}
+
+  /* ---------- 路线查询面板 ---------- */
+  /* overflow 改成 visible（原来是 hidden），原因是折叠键被面板圆角啃掉了角。
+     面板 border-radius:18px 且 overflow:hidden，而 #rpFold 只距顶 12px、距右 12px：
+     圆角圆心落在 (面板右-18, 面板顶+18)，按钮右上角到圆心的距离 < 18，
+     于是按钮右上那一小块被圆边裁平 —— 看上去只有左下角是圆的、右上是假直角。
+     面板自己的圆角并不需要 overflow 来裁剪：背景、backdrop-filter、
+     ::after(inset:0 + border-radius:inherit) 都会自动按 border-box 的圆角裁，
+     而真正需要裁剪的折叠动画在 .rp-body 上（它自己就有 overflow:hidden）。 */
+  /* 背景不透明度从 .76/.55/.6 抬到 .84/.74/.78。
+     之前中间层 .55 太透，backdrop-filter 模糊后的地图底图（pin、道路色块）
+     会作为彩色底色渗到面板里，和「出发点 / 到达点 / 互换」这些控件
+     视觉上叠在一起，用户看到的就是「面板里内容重叠」。
+     抬到 .74 之后，模糊的底图基本只在边缘漏出一点色相，
+     中间区域纯白为主，文字/按钮读起来清楚得多，玻璃质感也还在。 */
+  /* overflow: hidden 改成 visible —— 让右上角折叠键的方角"探出来"。
+     几何：折叠键 28×28 放在 panel 内容区右 12 / 上 11 处，按钮右上角到面板
+     圆角圆心距离 √(6² + 7²) = 9.22 < 半径 18，圆角把它啃掉一块。
+     之前想用 overflow: visible 让按钮的方角完整画出来就行，但当时
+     .prism ::after 的 mask 边框依赖父级 overflow 边界（其实不依赖，
+     mask-composite 只看自身的 border-radius），所以这个改法 0 风险。
+     面板的圆角还在，只是子元素不再被圆角裁切。 */
+  .route-panel{position:absolute;left:12px;top:12px;z-index:1300;width:260px;background:linear-gradient(180deg, rgba(255,255,255,.84) 0%, rgba(250,251,253,.74) 50%, rgba(245,247,250,.78) 100%);backdrop-filter:blur(10px) saturate(1.5);-webkit-backdrop-filter:blur(10px) saturate(1.5);border-radius:18px;padding:11px 12px;box-shadow:0 1px 2px rgba(15,30,60,.08), 0 12px 40px rgba(15,30,60,.2), 0 0 14px rgba(167,199,255,.2), 0 0 22px rgba(255,200,225,.18), inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.4);font-size:12.5px;overflow:visible;border:1px solid transparent;background-clip:padding-box}
+  /* 抽屉开关时对话框要整体挪位/收窄，这里给它补上 left / width 的过渡，
+     否则 body.panel-open 那条规则会瞬移，看起来像闪了一下。
+     注意只动 left 和 width，不碰 transform —— .rp-body 的折叠用的是 max-height。 */
+  .route-panel{transition:left .25s ease, width .25s ease}
+.route-panel::after{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg, rgba(167,199,255,.85) 0%, rgba(255,255,255,.95) 25%, rgba(255,200,225,.7) 50%, rgba(255,255,255,.95) 75%, rgba(186,165,255,.85) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.85}
+.route-panel::before{content:'';position:absolute;top:1px;left:10%;right:10%;height:20%;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,.25), transparent);pointer-events:none}
+  .route-panel.hidden{display:none}
+  .route-panel .rp-title{font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+  /* 折叠键尺寸必须跟同排控件对齐：.rp-mode 实测 28px、查询路线/清除 31px，
+   这里原来只有 22×22、圆角 6px、字号 11px —— 一个 11px 的 ▾ 挤在 22px 白框里，
+   渲染出来就是标题栏右边一个看不出是什么的白点（用户报的「尺寸没有调好」）。
+   统一到 28×28 / 圆角 8px（与 .rp-mode 一致），字号 13px，并用 flex 真正居中，
+   不再依赖 line-height 去凑垂直位置。 */
+  .route-panel .rp-title button{width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.45);cursor:pointer;font-size:13px;color:var(--muted);line-height:1;transition:background .15s,transform .2s}
+  .route-panel .rp-title button:hover{background:rgba(255,255,255,.8)}
+  .route-panel .rp-body{overflow:hidden;max-height:min(540px, calc(100vh - 80px));max-height:min(540px, calc(100dvh - 80px));transition:max-height .25s ease}
+  .route-panel.collapsed .rp-body{max-height:0}
+  /* 折叠动画期间临时摘掉 backdrop-filter：
+     收起/展开动的是 max-height，面板自身 + 里面 4 个 .rp-mode + 2 个 input + .rp-swap
+     一共 8 处 backdrop-filter，每一帧都要按新尺寸重新采样背景做一次高斯模糊，
+     250ms 里连着来 8 轮就明显掉帧 —— 症状正好是「驾车」那一排的上上下下卡一下。
+     玻璃材质本身不动，只在这 250ms 的动画窗口内关掉，动画一结束（JS 摘 .folding）立刻还原。
+     选择器压在 .route-panel / .rp-mode / .route-panel input 之上，靠类数取胜，不用 !important。 */
+  .route-panel.folding{backdrop-filter:none;-webkit-backdrop-filter:none}
+  .route-panel.folding .rp-body,.route-panel.folding .rp-body *{backdrop-filter:none;-webkit-backdrop-filter:none}
+  .route-panel.collapsed .rp-title{margin-bottom:0}
+  .route-panel.collapsed .rp-title button{transform:rotate(-90deg)}
+  .rp-modes{display:flex;gap:5px;margin-bottom:8px}
+  /* 摘掉 backdrop-filter（4 个 chip 上 blur 6px 地图，折叠动画里更是一帧一模糊）；
+     bg .45→.7 补偿；折叠动画期间再临时关一次（见 .route-panel.folding） */
+  .rp-mode{flex:1;padding:6px 0;font-size:12px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.7);color:var(--muted);transition:background .12s ease, color .12s ease}
+  .rp-mode.active{background:rgba(11,122,75,.85);color:#fff;border-color:rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(11,122,75,.35)}
+  .route-panel .rp-row{display:flex;align-items:center;gap:8px;margin:7px 0}
+  .route-panel .rp-ico{flex:none;width:11px;height:11px;border-radius:50%;border:2.5px solid}
+  /* 「互换」原本独占一整行：按钮 22px 加上下面 .rp-row 的上下 margin，
+     在宽面板下就是一条 32px 的空白带，右对齐放着一个小按钮，左边全空。
+     这里把这一行压成 0 高度，让按钮骑在出发点/到达点两行之间的缝上
+     （高德 / Google Maps 的做法），省掉 16px 死白，
+     也让两个输入框在视觉上连成一对「起终点」。
+     z-index 必须高于 input，否则按钮会被压到输入框底下点不到。 */
+  .route-panel .rp-row-swap{position:relative;height:0;margin:0;z-index:2}
+  /* 文案也去掉了，只留 ⇅：带「互换」二字时按钮 53px，会盖住输入框右侧 53px；
+     现在固定 26px 圆形（和 .item-add 同一套尺寸语言），只盖 26px，一半。
+     代价是文字上的直白没了，所以 HTML 里 title 和 aria-label 都必须留着 ——
+     去掉可见文字却不给 aria-label，按钮的无障碍名称就空了，屏幕阅读器只念「按钮」。
+
+     top 必须等于「按钮高度的一半」，按钮才正好骑在两行的缝上。
+     按钮高固定 26px → -13px。改 height 时要回来同步这个数，否则会偏上/偏下。 */
+  .route-panel .rp-row-swap .rp-swap{position:absolute;right:8px;top:-13px;width:26px;height:26px;padding:0;gap:0;justify-content:center;font-size:14px;border-radius:50%;box-shadow:0 2px 6px rgba(15,30,60,.16)}
+  .route-panel .rp-from{background:#30a46c;border-color:#30a46c}
+  .route-panel .rp-to{background:#e5484d;border-color:#e5484d}
+  /* 摘掉 backdrop-filter（2 个 input 上 blur 8px 地图，折叠动画里每帧重模糊）；
+     bg .55→.78 补偿 */
+  .route-panel input{flex:1;min-width:0;padding:7px 10px;font-size:13px;border:1px solid rgba(255,255,255,.8);border-radius:8px;outline:none;background:rgba(255,255,255,.78);color:var(--ink)}
+  .route-panel input::placeholder{color:var(--muted)}
+  .route-panel input:focus{border-color:var(--accent)}
+
+  /* 键盘快捷键面板 */
+  #helpOverlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);animation:fadeIn .15s ease}
+  #helpOverlay .help-card{background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.85));backdrop-filter:blur(20px) saturate(1.6);border:1px solid rgba(255,255,255,.7);border-radius:18px;padding:18px 22px;min-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.95);animation:slideUp .2s ease}
+  body.dark #helpOverlay .help-card{background:linear-gradient(180deg, rgba(35,40,50,.92),rgba(30,34,42,.85));border-color:rgba(255,255,255,.15);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .help-head{font-weight:700;font-size:15px;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:var(--ink)}
+  .help-x{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.6);color:#1a1f2e;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s}
+  body.dark .help-x{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)}
+  .help-x:hover{background:rgba(255,255,255,.9);transform:rotate(90deg)}
+  .help-table{width:100%;border-collapse:collapse;font-size:12.5px;color:var(--ink)}
+  .help-table td{padding:7px 10px;border-bottom:1px solid rgba(0,0,0,.06)}
+  body.dark .help-table td{border-bottom-color:rgba(255,255,255,.08)}
+  .help-table tr:last-child td{border-bottom:none}
+  .help-table kbd{display:inline-block;min-width:60px;padding:3px 9px;border-radius:6px;background:linear-gradient(180deg, rgba(255,255,255,.7),rgba(255,255,255,.45));border:1px solid rgba(0,0,0,.18);box-shadow:0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.08);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;color:#1a1f2e;text-align:center;font-weight:600}
+  body.dark .help-table kbd{background:linear-gradient(180deg, rgba(60,65,75,.7),rgba(40,45,55,.45));border-color:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 -1px 0 rgba(0,0,0,.5)}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+  /* 缩放指示器 */
+  .zoom-indicator{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;margin-top:2px;border-radius:11px;background:linear-gradient(180deg, rgba(255,255,255,.78) 0%, rgba(248,250,252,.55) 50%, rgba(240,243,247,.6) 100%);border:1px solid rgba(255,255,255,.7);backdrop-filter:blur(14px) saturate(1.5);-webkit-backdrop-filter:blur(14px) saturate(1.5);box-shadow:0 1px 2px rgba(15,30,60,.08), 0 6px 18px rgba(15,30,60,.1), inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.3);font-size:11.5px;position:relative;color:var(--ink);overflow:hidden}
+/* filter:blur(.5px) 已删除：.5px 模糊肉眼基本看不出，但 filter 会创建独立合成层 + 渲染通道，
+   在常驻的缩放指示器上毫无意义。渐变本身已经有从 .85 渐变到 transparent 的过渡。 */
+.zoom-indicator::before{content:'';position:absolute;top:1px;right:6%;width:36%;height:38%;border-radius:50%/40%;background:radial-gradient(ellipse at 70% 30%, rgba(255,255,255,.85) 0%, rgba(255,255,255,.3) 55%, transparent 90%);pointer-events:none}
+  body.dark .zoom-indicator{background:linear-gradient(180deg, rgba(50,55,65,.7),rgba(35,40,50,.45));border-color:rgba(255,255,255,.12)}
+  .zoom-label{color:var(--muted);padding:0 4px}
+  .zoom-level{display:inline-block;min-width:30px;text-align:center;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  .zoom-btn,.zoom-help{width:24px;height:24px;border-radius:8px;border:1px solid rgba(255,255,255,.7);background:linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(248,250,252,.55) 50%, rgba(240,243,247,.55) 100%);color:#1a1f2e;cursor:pointer;font-size:13px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;transition:.12s;box-shadow:inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.35), 0 2px 6px rgba(15,30,60,.08);position:relative;overflow:hidden}
+/* spring 缓动换成 ease + 去掉 box-shadow 过渡（按 24px 小按钮的 hover 视觉收益低） */
+.zoom-btn,.zoom-help{transition:transform .12s ease}
+.zoom-btn:hover,.zoom-help:hover{transform:translateY(-1px) scale(1.08);box-shadow:inset 0 .5px 0 rgba(255,255,255,.95), inset 0 -.5px 0 rgba(255,255,255,.4), 0 4px 10px rgba(15,30,60,.15)}
+.zoom-btn:active,.zoom-help:active{transform:translateY(0) scale(.94);transition:transform .1s cubic-bezier(.4,0,.2,1)}
+  body.dark .zoom-btn,body.dark .zoom-help{background:linear-gradient(180deg, rgba(70,75,85,.85),rgba(45,50,60,.5));color:#fff;border-color:rgba(255,255,255,.18)}
+  .zoom-btn:hover,.zoom-help:hover{background:rgba(255,255,255,.95);transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.15)}
+  .zoom-btn:active,.zoom-help:active{transform:translateY(0)}
+  .zoom-help{font-weight:700;color:var(--accent);background:linear-gradient(180deg, rgba(52,211,153,.18),rgba(52,211,153,.08))}
+  .route-panel .rp-actions{display:flex;gap:8px;margin-top:10px}
+  .route-panel .rp-actions button{flex:1;padding:7px 0;font-size:13px;border-radius:8px;cursor:pointer;border:1px solid transparent;font-weight:600;transition:.15s}
+  .route-panel .rp-actions #rpGo{background:linear-gradient(135deg,#e5484d,#c22b30);color:#fff;box-shadow:0 2px 8px rgba(229,72,77,.4)}
+  .route-panel .rp-actions #rpGo:hover{filter:brightness(1.08)}
+  .route-panel .rp-actions #rpClear{background:rgba(255,255,255,.6);color:var(--muted);border-color:rgba(255,255,255,.7)}
+  .rp-summary{margin-top:8px;padding:7px 10px;border-radius:9px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.7);font-size:12px;color:var(--muted)}
+  .rp-summary .rp-sum-line{display:block;line-height:1.6}
+  .rp-summary b{color:var(--ink);font-weight:700}
+  .rp-cards{margin-top:7px;display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;overflow-x:hidden;padding-right:3px;scrollbar-width:thin;scrollbar-color:rgba(120,140,170,.5) transparent}
+  .rp-cards::-webkit-scrollbar{width:5px}
+  .rp-cards::-webkit-scrollbar-track{background:transparent}
+  .rp-cards::-webkit-scrollbar-thumb{background:rgba(120,140,170,.3);border-radius:3px}
+  .rp-cards.scrolling::-webkit-scrollbar{width:9px}
+  .rp-cards.scrolling::-webkit-scrollbar-track{background:rgba(120,140,170,.16)}
+  .rp-cards.scrolling::-webkit-scrollbar-thumb{background:#0b7a4b;border-radius:5px;box-shadow:0 0 6px rgba(11,122,75,.7)}
+  .rp-cards::-webkit-scrollbar-thumb:hover,.rp-cards::-webkit-scrollbar-thumb:active{background:#0b7a4b}
+  .rp-cards .rp-card{margin:0}
+  .rp-card{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.7);cursor:pointer;transition:.15s;box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+  .rp-card:hover{background:rgba(255,255,255,.72)}
+  .rp-card.sel{border-color:#e5484d;background:rgba(255,240,241,.6);box-shadow:0 0 0 1px rgba(229,72,77,.5)}
+  .rp-card .rp-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+  .rp-card .rp-card-dist{font-size:16px;font-weight:700;color:var(--ink)}
+  .rp-card .rp-card-time{font-size:12px;color:#e5484d;font-weight:700}
+  .rp-card .rp-card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+  .rp-tag{font-size:10px;padding:1px 6px;border-radius:7px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.7);color:var(--muted);white-space:nowrap}
+  .rp-tag.t-red{background:rgba(229,72,77,.15);color:#c22b30;border-color:rgba(229,72,77,.4)}
+  .rp-tag.t-green{background:rgba(48,164,108,.15);color:#0b7a4b;border-color:rgba(48,164,108,.4)}
+  .rp-tag.t-orange{background:rgba(245,165,36,.18);color:#a05a00;border-color:rgba(245,165,36,.5)}
+  .rp-card .rp-card-road{margin-top:4px;font-size:11px;color:var(--muted);line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rp-card{position:relative}
+
+  /* 路线卡片悬停：完整路线指引（fixed 定位，不受容器 overflow 裁剪） */
+  .rp-tip{position:fixed;z-index:5000;background:rgba(20,24,30,.96);color:#e8eaed;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:9px 11px;font-size:11.5px;line-height:1.55;max-width:320px;max-height:300px;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,.4);pointer-events:auto;display:none;scrollbar-width:thin}
+  .rp-tip::-webkit-scrollbar{width:5px}
+  .rp-tip::-webkit-scrollbar-thumb{background:rgba(150,170,200,.4);border-radius:3px}
+  body.dark .rp-tip{background:rgba(10,12,16,.95);border-color:rgba(255,255,255,.16)}
+  .rp-tip .rt-title{font-weight:700;margin-bottom:5px;color:#fff}
+  .rp-tip .fs-row{display:flex;gap:6px;margin:3px 0;align-items:flex-start}
+  .rp-tip .fs-row b{flex:none;min-width:15px;color:var(--accent);font-weight:700}
+  body.dark .rp-tip .fs-row b{color:#34d399}
+  .rp-wp-title{font-size:12px;color:var(--muted);margin-top:10px;font-weight:600}
+  .rp-wp{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .rp-wp-empty{font-size:12px;color:var(--muted);opacity:.8}
+  .rp-wp-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:2px 7px;border-radius:10px;border:1px solid rgba(48,164,108,.4);background:rgba(48,164,108,.1);color:var(--ink);max-width:100%}
+  .rp-wp-chip .idx{color:#0b7a4b;font-weight:700}
+  .rp-wp-chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+  .rp-wp-chip .x{cursor:pointer;color:#c22b30;font-weight:700;font-size:14px;line-height:1;margin-left:2px}
+  .rp-wp-chip .x:hover{color:#e5484d}
+  .rp-row-swap{display:flex;justify-content:flex-end;margin:2px 0 2px}
+  /* 摘掉 backdrop-filter（互换按钮上 blur 8px 地图收益低）；bg .55→.78 补偿 */
+  .rp-swap{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;font-size:11.5px;border-radius:7px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.78);color:var(--muted);cursor:pointer;transition:background .12s ease, color .12s ease, border-color .12s ease}
+  .rp-swap:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+  body.dark .route-panel{background:rgba(30,35,45,.68);border-color:rgba(255,255,255,.18);box-shadow:0 6px 24px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12)}
+  body.dark .route-panel input{background:rgba(40,45,56,.6);border-color:var(--glass-border);color:var(--ink)}
+  body.dark .route-panel .rp-title button{background:rgba(40,45,56,.6);border-color:var(--glass-border);color:var(--muted)}
+  /* 摘掉 backdrop-filter 后深色背景也要补：.5→.72 补偿 */
+  body.dark .rp-mode{background:rgba(40,45,56,.72);border-color:var(--glass-border);color:var(--muted)}
+  body.dark .rp-mode.active{background:rgba(52,211,153,.85);color:#06281a;border-color:rgba(255,255,255,.25)}
+  body.dark .rp-summary{background:rgba(40,45,56,.5);border-color:var(--glass-border)}
+  body.dark .rp-card{background:rgba(40,45,56,.5);border-color:var(--glass-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  body.dark .rp-card:hover{background:rgba(50,56,68,.7)}
+  body.dark .rp-card.sel{border-color:#e5484d;background:rgba(70,35,40,.55)}
+  body.dark .rp-tag{background:rgba(40,45,56,.5);border-color:var(--glass-border);color:var(--muted)}
+  body.dark .rp-wp-chip{border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.12);color:var(--ink)}
+  body.dark .rp-wp-chip .idx{color:#34d399}
+  body.dark .rp-wp-chip .x{color:#ff8a8d}
+  body.dark .rp-swap{background:rgba(40,45,56,.78);border-color:var(--glass-border);color:var(--muted)}
+  body.dark .rp-swap:hover{background:rgba(52,211,153,.85);color:#06281a}
+  body.dark .rp-tag.t-red{background:rgba(229,72,77,.2);color:#ff8a8d;border-color:rgba(229,72,77,.4)}
+  body.dark .rp-tag.t-green{background:rgba(48,164,108,.2);color:#7fd9a8;border-color:rgba(48,164,108,.4)}
+  body.dark .rp-tag.t-orange{background:rgba(245,165,36,.2);color:#f5c95c;border-color:rgba(245,165,36,.4)}
+  body.dark .route-panel .rp-actions #rpClear{background:rgba(40,45,56,.6);color:var(--muted);border-color:var(--glass-border)}
+  body.dark .rp-cards{scrollbar-color:rgba(150,180,220,.4) transparent}
+  body.dark .rp-cards::-webkit-scrollbar-thumb{background:rgba(150,180,220,.3)}
+  body.dark .rp-cards.scrolling::-webkit-scrollbar-track{background:rgba(150,180,220,.16)}
+  body.dark .rp-cards.scrolling::-webkit-scrollbar-thumb{background:#34d399;box-shadow:0 0 6px rgba(52,211,153,.7)}
+  body.dark .rp-cards::-webkit-scrollbar-thumb:hover,body.dark .rp-cards::-webkit-scrollbar-thumb:active{background:#34d399}
+
+  /* 启动加载提示 */
+  #boot{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2000;color:var(--muted);font-size:14px;background:var(--bg)}
+  body.dark #boot{background:var(--bg)}
+
+  /* 非阻塞提示 toast */
+  /* toast 落在底部居中：原来放顶部正中，正好压住右上角的路线查询面板，
+     白底半透明的那块把面板标题栏的折叠键盖掉了 73%（实测 overlap 352/484 px²）。
+     底部居中是整页唯一空着的横带：左侧是侧栏(0-320)、左下是比例尺与版权(x<=561,y>=661)、
+     右下是「回到我的位置」(x>=1230)，y 620~656 这条带上什么都没有。
+     收起/弹出方向也跟着镜像成自下而上。
+     spring 缓动换 ease（.34,1.56,.64,1 会算反向运动帧；toast 一次性弹窗，ease 已够用）。 */
+  .toast{position:fixed;bottom:64px;left:50%;transform:translate(-50%,12px) scale(.95);z-index:4000;background:linear-gradient(180deg, rgba(50,56,66,.9) 0%, rgba(35,40,50,.85) 50%, rgba(28,32,38,.95) 100%);color:#fff;padding:9px 16px;border-radius:11px;font-size:12.5px;backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);box-shadow:0 10px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.12);pointer-events:none;opacity:0;transition:opacity .25s ease, transform .35s ease;max-width:min(420px,76vw);text-align:center}
+body.light-mode .toast,.toast.ok,.toast.info,.toast.error{background:linear-gradient(180deg, rgba(255,255,255,.92),rgba(245,247,250,.85));color:#1a1f2e;border-color:rgba(255,255,255,.6);box-shadow:0 10px 32px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.95)}
+  .toast.show{opacity:1;transform:translate(-50%,0) scale(1);animation:toastPop .35s ease}
+@keyframes toastPop{0%{transform:translate(-50%,12px) scale(.92);opacity:0}100%{transform:translate(-50%,0) scale(1);opacity:1}}
+  .toast.ok{background:rgba(20,122,74,.94)}
+  .toast.error{background:rgba(200,45,50,.94)}
+  .toast.info{background:rgba(38,78,128,.94)}
+
+  /* ---------- 夜间模式补齐：压掉压在深色面板上的白色透明层 ----------
+     夜间只改了各组件自己的 background，从来没管叠在上面的 ::before / ::after。
+     结果那些白色透明渐变原封不动地盖在深色面板上，用户看到的就是
+     「深色面板上糊着一层白色渐变」：
+       .route-panel::before   rgba(255,255,255,.25)  盖住对话框顶部 20%，正好压着标题栏
+       .measure-panel::before rgba(255,255,255,.5)   强度更大
+       .p-head::before        rgba(255,255,255,.7)   侧栏标题栏顶部 6px
+       .zoom-indicator::before rgba(255,255,255,.85) 一大团白色球面高光
+       .btn/.chip/.legend::after  白到 .95 的棱镜渐变描边 → 深色面板上一圈白边
+       悬停光斑 ::before        整块移除（见上方「悬停反馈」块：光斑半径盖满小控件，
+                                 白到 .5~.75 直接把按钮上的 emoji 和灰字冲淡）
+     还有一个明确的错误：body.dark .pp-inner::before（第 365 行）写成了 90deg
+     （左右方向）、白到 .55，而浅色那条是 180deg（自上而下）、.32 ——
+     深色下弹窗正中间横着糊了一条白带。方向写错 + 强度高了一倍，这里一并改对。
+     策略：顶部柔光降到 .07~.09，棱镜描边整体压到 .35，
+     并补上 hover 状态缺失的深色底 —— 深色里一点白就刺眼，悬停反馈改用低透明冷白。 */
+  body.dark .p-head::before{background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,0))}
+  body.dark .route-panel::before{background:linear-gradient(180deg, rgba(255,255,255,.07), transparent)}
+  body.dark .measure-panel::before{background:linear-gradient(180deg, rgba(255,255,255,.09), transparent)}
+  body.dark .pp-inner::before{background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 100%)}
+  body.dark .zoom-indicator::before{background:radial-gradient(ellipse at 70% 30%, rgba(255,255,255,.16) 0%, rgba(255,255,255,.06) 55%, transparent 90%)}
+  /* 棱镜描边：夜里保留一点色散，别变成一圈白边 */
+  body.dark .route-panel::after,
+  body.dark .measure-panel::after,
+  body.dark .btn::after,
+  body.dark .chip::after,
+  body.dark .legend::after{opacity:.35}
+  /* 深色下的悬停反馈：浅色下是「底色变白」，夜间得压到 .14~.16，否则是一块白斑 */
+  body.dark :where(.rp-mode,.b-chip):hover{background:rgba(255,255,255,.14)}
+  body.dark :where(.zoom-btn,.zoom-help,.pp-close):hover{background:rgba(255,255,255,.16)}
+  body.dark .legend:hover{background:rgba(58,65,80,.8)}
+  body.dark .f-toggle:hover{background:rgba(255,255,255,.14)}
+  body.dark .mi-btn:hover{background:rgba(255,255,255,.16)}
+  body.dark .route-panel .rp-title button:hover{background:rgba(255,255,255,.14)}
+  body.dark .help-x:hover{background:rgba(255,255,255,.18)}
+
+  /* ---------- 紫晶：把深色表面重新刷成紫 ----------
+     body 上同时挂了 dark 和 violet，所以这里只写「色相」和「强调色」，
+     结构 / 层级 / 模糊半径 / 动效一律沿用夜间那套，不重复第二遍。 */
+  /* 下面所有选择器一律写成 body.dark.violet，不是 body.violet。
+     原因：紫晶是「复用夜间表面」，要压过的是 body.dark X 那些规则，而它们大多是
+     body.dark + 两个类 = (0,3,1)。如果这里只写 body.violet X，特异性只有 (0,2,1)，
+     会被反超 —— 实测就栽在这：body.dark .rp-mode.active (0,3,1) 压过了
+     body.violet :where(.rp-mode).active (0,2,1)，「驾车」在紫晶下还是薄荷绿。
+     （顺带记一笔：:where() 会把参数特异性清零，在需要「比同款规则更优先」的场景里
+     是陷阱，别顺手用。）加上 .dark 后变成 (0,4,1)，稳定压过。 */
+  /* 强调色：夜间的薄荷绿选中态换成紫水晶 */
+  body.dark.violet .btn.active,
+  body.dark.violet .chip.active,
+  body.dark.violet .rp-mode.active{background:rgba(147,72,220,.88);color:#fff;border-color:rgba(233,220,255,.75);box-shadow:0 2px 10px rgba(147,72,220,.45)}
+  body.dark.violet :focus-visible{outline-color:#c084fc}
+  /* 选中行：浅绿改成紫罗兰底 */
+  body.dark.violet .item.sel{background:rgba(168,120,240,.24);border-color:rgba(196,132,252,.55)}
+  /* 主玻璃往深紫拉一档 */
+  body.dark.violet #panel{background:linear-gradient(180deg, rgba(62,36,104,.88), rgba(48,27,84,.8), rgba(40,22,72,.86));box-shadow:0 1px 2px rgba(10,2,28,.4), 8px 0 44px rgba(30,6,70,.6), inset 1px 0 0 rgba(220,196,255,.14)}
+  body.dark.violet .p-head{background:linear-gradient(180deg, rgba(94,58,150,.62) 0%, rgba(70,42,120,.5) 60%, rgba(58,33,102,.55) 100%);border-bottom-color:rgba(206,170,255,.2)}
+  body.dark.violet .filters{background:rgba(78,46,128,.42);border-bottom-color:rgba(206,170,255,.16)}
+  /* 棱镜色散：蓝→白→粉 换成 紫→粉白→品红 */
+  body.dark.violet #panel::after{background:linear-gradient(180deg, rgba(196,132,252,0) 0%, rgba(196,132,252,.95) 25%, rgba(255,214,245,1) 50%, rgba(255,168,214,.9) 75%, rgba(196,132,252,0) 100%)}
+  /* 玻璃高光：白改紫粉。白高光落在紫底上就是一块块死白，比夜色模式还刺眼 */
+  body.dark.violet .p-head::before{background:linear-gradient(180deg, rgba(226,196,255,.10), rgba(226,196,255,0))}
+  body.dark.violet .route-panel::before{background:linear-gradient(180deg, rgba(226,196,255,.09), transparent)}
+  body.dark.violet .measure-panel::before{background:linear-gradient(180deg, rgba(226,196,255,.10), transparent)}
+  body.dark.violet .pp-inner::before{background:linear-gradient(180deg,rgba(226,196,255,.11) 0%,rgba(226,196,255,0) 100%)}
+  body.dark.violet .zoom-indicator::before{background:radial-gradient(ellipse at 70% 30%, rgba(232,206,255,.15) 0%, rgba(232,206,255,.06) 55%, transparent 90%)}
+  /* 地图上的名字标签 */
+  body.dark.violet .sp-name{background:rgba(38,20,68,.9);border-color:rgba(206,170,255,.22)}
+  /* 浮层类面板统一染紫 */
+  body.dark.violet :where(.menu,.q-list,.cluster-list,.legend,.measure-panel,.route-panel,.zoom-indicator,.pp-inner){border-color:rgba(206,170,255,.18)}
+  body.dark.violet .toast{background:linear-gradient(180deg, rgba(74,42,126,.94) 0%, rgba(52,29,94,.92) 50%, rgba(40,21,76,.96) 100%);border-color:rgba(206,170,255,.2)}
+  /* 悬停反馈跟着染色：光斑移除后 hover 全部落在 background 上，
+     不覆写就会在紫晶面板上留下一块中性白 / 蓝灰。
+     同样必须带 .dark 前缀压过 body.dark 那几条。 */
+  body.dark.violet .legend:hover{background:rgba(96,64,160,.82)}
+  body.dark.violet :where(.rp-mode,.b-chip):hover{background:rgba(196,132,252,.2)}
+  body.dark.violet :where(.zoom-btn,.zoom-help,.pp-close):hover{background:rgba(206,170,255,.22)}
+
+  /* 动效克制：尊重系统「减少动态」设置。
+     用通配 + 0.01ms 把所有 transition/animation 几乎瞬时完成，而不是
+     一个一个列选择器（列表长，且新增组件容易漏）。
+     transition 保留 transform/opacity 上的 0.01ms 触发器，避免
+     某些用 :hover 触发的位置/层级突变没有过渡。 */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important}
+  }
+
+  /* 触屏设备：把命中区抬到 ~44px（桌面 pointer:fine 不受影响） */
+  /* 安卓端可能不会触发 click 但会触发 touchstart，对弹窗外点击需要手动兼容 */
+(function(){
+  if(!window.matchMedia('(pointer: coarse)').matches) return;
+  // toast 提示：touchstart 关闭
+  document.addEventListener('touchstart', function(e){
+    var t = e.target;
+    if(t && t.classList && t.classList.contains('help-x')){
+      e.preventDefault();
+      hideHelpOverlay();
+    }
+  }, {passive: false});
+})();

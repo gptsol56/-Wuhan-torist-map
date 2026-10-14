@@ -1,0 +1,20 @@
+services:
+  crowd-proxy:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - JIKE_API_KEY=${JIKE_API_KEY}
+      - JIKE_API_BASE=${JIKE_API_BASE:-https://data-api.isjike.com}
+      - JIKE_API_PATH=${JIKE_API_PATH:-/api/v1/heat_map}
+      - JIKE_HTTP_METHOD=${JIKE_HTTP_METHOD:-POST}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-300}
+      - PORT=3000
+    env_file:
+      - .env  # fallback
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

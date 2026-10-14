@@ -1,0 +1,24 @@
+{
+  "name": "wuhan-crowd-proxy",
+  "version": "1.0.0",
+  "description": "Express 代理：把及客智能人流量 API key 保护在后端，前端只看到 /api/crowd",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "vitest run",
+    "smoke": "node scripts/smoke.js"
+  },
+  "dependencies": {
+    "coordtransform": "^2.1.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  }
+}

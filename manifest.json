@@ -1,0 +1,16 @@
+{
+  "name": "武汉景点地图",
+  "short_name": "武汉景点",
+  "description": "武汉市 50 个景点地图，含人流预测、路线规划、预约信息",
+  "start_url": "./武汉景点地图.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e5484d",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%23e5484d' width='192' height='192' rx='24'/%3E%3Ctext y='130' x='50%25' text-anchor='middle' font-size='120'%3E%F0%9F%8F%AF%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
