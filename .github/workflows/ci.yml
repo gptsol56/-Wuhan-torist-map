@@ -7,7 +7,7 @@ on:
 
 jobs:
   frontend:
-    name: 前端（3 个构建 + 359 测试）
+    name: 前端（3 个构建 + 全量单测）
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

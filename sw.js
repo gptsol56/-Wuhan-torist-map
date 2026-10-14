@@ -1,7 +1,7 @@
 // PWA Service Worker v30 — 分级缓存策略
 // 改任何前端文件后把 VERSION 加 1：三个缓存名都跟着它走，
 // activate 会顺手把上一个 VERSION 的缓存删掉（见下方 activate）。
-var VERSION = 45;
+var VERSION = 46;
 var CACHE = 'wuhan-map-v' + VERSION;
 var BYPASS = false;
 var STATIC_CACHE = 'wuhan-map-static-v' + VERSION;
@@ -25,7 +25,12 @@ self.addEventListener('install', function(e){
         scoped('style.min.css'),
         scoped('app.min.js'),
         scoped('spots.data.js'),
-        scoped('manifest.json')
+        scoped('manifest.json'),
+        // 图标一并预缓存：离线安装 PWA / 主屏图标才完整（P2）
+        scoped('icons/icon-192.png'),
+        scoped('icons/icon-512.png'),
+        scoped('icons/icon-maskable-512.png'),
+        scoped('icons/apple-touch-icon.png')
       ]);
     }),
     caches.open(CACHE).then(function(c){
