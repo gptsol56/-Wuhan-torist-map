@@ -360,6 +360,11 @@ body.dark .sp-name{background:rgba(15,18,24,.9);color:#fff;border-color:rgba(255
   body.dark .iw .t-mid{color:#ffb054}   /* 深色弹窗里中档人流用亮橙，避免深橙文字隐形 */
   .iw .peak{color:#8a5a00}
   .iw .c-tip{margin-top:9px;padding:7px 9px;background:rgba(240,250,244,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(207,232,219,.9);border-radius:9px;font-size:12px;line-height:1.5;color:#0b5d3b;overflow-wrap:break-word;word-break:break-word;white-space:normal}
+  /* 弹窗「周边」节（F3）：胶囊可点，点了切到那个景点（高亮行 + 平移 + 开弹窗） */
+  .iw .c-near{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:8px;font-size:12px}
+  .iw .c-near b{font-weight:600;opacity:.72;white-space:nowrap}
+  .iw .c-near .pp-near{border:1px solid rgba(11,122,75,.32);background:rgba(11,122,75,.07);color:#0b5d3b;border-radius:12px;padding:2px 9px;font-size:12px;cursor:pointer;transition:background .15s,transform .15s ease}
+  .iw .c-near .pp-near:hover{background:rgba(11,122,75,.15);transform:translateY(-1px)}
 
   /* 右上角控件 */
   /* 摘掉 backdrop-filter（右上角小按钮组，模糊收益低）；spring 换 ease + 去掉 box-shadow 过渡 */
@@ -468,6 +473,8 @@ body.dark .sp-name{background:rgba(15,18,24,.9);color:#fff;border-color:rgba(255
   body.dark .pp-inner::after{background:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 100%)}
   body.dark .pp-arrow{background:rgba(30,35,45,.6);border-color:rgba(255,255,255,.18)}
   body.dark .iw .c-tip{background:rgba(20,55,40,.55);border-color:rgba(50,110,80,.55);color:#8fd9b0}
+  body.dark .iw .c-near .pp-near{border-color:rgba(90,180,140,.4);background:rgba(20,55,40,.5);color:#8fd9b0}
+  body.dark .iw .c-near .pp-near:hover{background:rgba(30,70,50,.7)}
   body.dark .iw .peak{color:#e5c37a}
   body.dark #map canvas{filter:var(--map-filter)}
   /* 腾讯 SDK 内部用 canvas 渲染地名/道路标签，CSS 无法直接控制文字字体，

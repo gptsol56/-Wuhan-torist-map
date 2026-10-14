@@ -149,6 +149,31 @@ var popupContent = popup.querySelector('.pp-content');
 var popupSpot = null;   // 当前弹窗对应的景点
 var popupPrevFocus = null;   // 打开弹窗前持焦元素，关闭时归还焦点
 
+/* ---- 周边推荐（F3）----
+   球面距离自算 haversine 而不走 TMap.geometry —— 纯函数，单测不需要桩 SDK。
+   半径内无邻居（远郊孤立景点）返回空数组，弹窗不渲染该节。 */
+var NEARBY_RADIUS = 2000;   // 米
+var NEARBY_MAX = 4;
+function distMeters(a, b){
+  var R = 6371000, rad = Math.PI / 180;
+  var dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+  var s1 = Math.sin(dLat / 2), s2 = Math.sin(dLng / 2);
+  var h = s1 * s1 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * s2 * s2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function nearbySpots(s, radiusM, max){
+  var r = radiusM || NEARBY_RADIUS, cap = max || NEARBY_MAX;
+  var out = [];
+  for(var i = 0; i < SPOTS.length; i++){
+    var o = SPOTS[i];
+    if(o === s || o.name === s.name) continue;
+    var d = distMeters(s, o);
+    if(d <= r) out.push({ spot: o, dist: d, index: i });
+  }
+  out.sort(function(a, b){ return a.dist - b.dist; });
+  return out.slice(0, cap);
+}
+
 function spotHTML(s){
   var r = getReserveInfo(s);
   var rname = r[0];
@@ -171,6 +196,14 @@ function spotHTML(s){
     '<div class="c-advice">💬 '+esc(getCrowdAdvice(s).full)+'</div>'+
     '<div class="c-trend">'+trendHTML(s)+'</div>'+
     '<div class="c-row"><b>地址</b><span>'+esc(s.addr)+'</span></div>'+
+    (function(){
+      var near = nearbySpots(s);
+      if(!near.length) return '';
+      return '<div class="c-near"><b>📍 周边 '+ (NEARBY_RADIUS >= 1000 ? (NEARBY_RADIUS/1000) + ' 公里' : NEARBY_RADIUS + ' 米') +'</b>'+
+        near.map(function(nb){
+          return '<button class="pp-near" data-i="' + nb.index + '" title="查看 '+esc(nb.spot.name)+'">'+esc(nb.spot.name)+' · '+fmtDist(nb.dist)+'</button>';
+        }).join('') + '</div>';
+    })()+
     '<div class="c-tip">💡 '+esc(s.tip)+'</div>'+actions+'</div>';
 }
 var popupSize = null, wrapSize = null;   // 弹窗/容器尺寸缓存：pan/zoom 时避免每帧读布局
@@ -1808,6 +1841,13 @@ function navTo(s){
 function bindPopupActions(s){
   var goBtn = popupContent.querySelector('[data-act="go"]');
   if(goBtn) goBtn.onclick = function(){ navTo(s); };
+  // 周边胶囊（F3）：点击切到那个景点 —— 高亮列表行 + 平移聚焦 + 打开它的弹窗。
+  // dataset.i 保持字符串传入（select 内部用 el.dataset.id === id 严格比较，传数字会失配）
+  popupContent.querySelectorAll('.pp-near').forEach(function(nb){
+    nb.onclick = function(){
+      if(SPOTS[+nb.dataset.i]) select(nb.dataset.i, true);
+    };
+  });
 }
 
 
