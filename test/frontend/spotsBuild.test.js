@@ -17,7 +17,7 @@ const SRC = path.join(ROOT, 'spots.src.json');
 const OUT_JSON = path.join(ROOT, 'spots.json');
 const OUT_JS = path.join(ROOT, 'spots.data.js');
 const APP = path.join(ROOT, 'app.js');
-const HTML = path.join(ROOT, '武汉景点地图.html');
+const HTML = path.join(ROOT, 'index.html');
 
 const read = (p) => fs.readFileSync(p, 'utf8');
 

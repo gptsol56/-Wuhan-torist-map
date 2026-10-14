@@ -84,5 +84,5 @@ docker compose logs -f
 任意 Node 18+ 环境：`server.js` 监听 `process.env.PORT`。
 
 ## 前端已对接
-`武汉景点地图.html` 的 `LIVE_DATA_URL` 已改为 `/api/crowd`。
+`index.html` 的 `LIVE_DATA_URL` 已改为 `/api/crowd`。
 `fetchLiveData()` 解析 `{ok, spots, source}`，状态栏显示「及客智能 / 本地 mock」。

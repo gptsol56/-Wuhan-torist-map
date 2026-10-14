@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadPart } from './helpers/loadAppPart.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const HTML_PATH = path.resolve(__dirname, '..', '..', '武汉景点地图.html');
+const HTML_PATH = path.resolve(__dirname, '..', '..', 'index.html');
 
 // 直接用真实的页面骨架，避免测试里手抄一份 HTML 后与产品结构漂移。
 // 这里只关心 ☰ 菜单与 .f-toggle 折叠这两块，地图/侧栏其余部分不参与执行。

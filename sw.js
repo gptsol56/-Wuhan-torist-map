@@ -1,7 +1,7 @@
 // PWA Service Worker v30 — 分级缓存策略
 // 改任何前端文件后把 VERSION 加 1：三个缓存名都跟着它走，
 // activate 会顺手把上一个 VERSION 的缓存删掉（见下方 activate）。
-var VERSION = 36;
+var VERSION = 38;
 var CACHE = 'wuhan-map-v' + VERSION;
 var BYPASS = false;
 var STATIC_CACHE = 'wuhan-map-static-v' + VERSION;
@@ -13,7 +13,7 @@ var RUNTIME_CACHE = 'wuhan-map-runtime-v' + VERSION;
    scope 永远以 '/' 结尾，new URL('app.min.js', scope) 即本目录下的绝对地址。 */
 var SCOPE = new URL(self.registration.scope);
 function scoped(p){ return new URL(p, SCOPE).href; }
-var ENTRY_HTML = scoped('武汉景点地图.html');
+var ENTRY_HTML = scoped('index.html');
 
 // install: 预缓存关键资源（含入口 HTML —— A1）
 // 入口页进缓存后，「从未在线访问过的设备」断网打开也能拿到完整应用外壳；
@@ -148,7 +148,7 @@ self.addEventListener('fetch', function(e){
 
   /* HTML 导航：network-first —— 页面内容经常更新，在线时永远拿最新的。
      判定用 request.mode === 'navigate'（A1）：原来按 URL 字符串匹配 scope 根路径，
-     入口页「武汉景点地图.html」永远匹配不上，掉进最底下的「默认网络」分支 ——
+     入口页「index.html」永远匹配不上，掉进最底下的「默认网络」分支 ——
      断网刷新只能看到 OFFLINE_MSG 错误页，预缓存的完整应用根本用不上。
      navigate 模式覆盖所有页面地址（中文文件名、scope 根、index.html）。
      离线兜底顺序：当前地址的缓存 → 预缓存的入口 HTML → 离线提示页。

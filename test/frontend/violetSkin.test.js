@@ -183,7 +183,7 @@ describe('主题：日/夜 与 紫晶 是两个独立开关', () => {
   });
 
   it('HTML 里必须有紫晶这个独立入口', () => {
-    const html = fs.readFileSync(path.join(ROOT, '武汉景点地图.html'), 'utf8');
+    const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
     expect(html).toContain('id="btn-violet"');
     expect(html).toContain('id="btn-theme"');
   });

@@ -88,13 +88,15 @@ app.use('/metrics', metricsRouter);
    注意 STATIC_DIR 就是项目根目录，所以前面必须挂白名单守卫 ——
    否则 /server/server.js、/node_modules/**、测试文件都会被当静态资源发出去。 */
 const STATIC_DIR = path.resolve(__dirname, '..');
-const HTML_FILE = '武汉景点地图.html';
+const HTML_FILE = 'index.html';
+// 旧中文文件名入口保留为一枚重定向页（透传 hash/query，收藏的分享链接不丢）
+const LEGACY_ENTRY = '武汉景点地图.html';
 const PUBLIC_ASSETS = new Set([
   '/app.min.js', '/app.js',           // app.js 是源文件（测试用），保留直连兼容
   '/spots.data.js', '/spots.json',
   '/style.min.css', '/sw.js', '/manifest.json',
 ]);
-const PUBLIC_PAGES = new Set(['/', '/index.html', '/' + HTML_FILE]);
+const PUBLIC_PAGES = new Set(['/', '/index.html', '/' + LEGACY_ENTRY]);
 
 app.use(function publicOnly(req, res, next){
   const p = req.path.split('?')[0];
@@ -106,7 +108,8 @@ app.use(function publicOnly(req, res, next){
   next();
 });
 
-// 首页文件名带中文，express.static 的 index 机制用不上，单独路由一次
+// 入口单独路由一次：要给 HTML 挂 no-cache（express.static 的 setHeaders 也能做，
+// 但显式路由把「入口必须每次回源」这个约束写在离白名单最近的地方）
 app.get(['/', '/index.html'], function serveIndex(req, res, next){
   if(!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

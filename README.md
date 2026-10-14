@@ -1,5 +1,7 @@
 # 武汉景点地图
 
+[![CI](https://github.com/gptsol56/-Wuhan-torist-map/actions/workflows/ci.yml/badge.svg)](https://github.com/gptsol56/-Wuhan-torist-map/actions/workflows/ci.yml)
+
 零构建的单页 Web 应用 + 可选的人流代理后端：在腾讯地图上呈现武汉 50 个精选景点，提供近 10 天人流参考、预约/购票信息、多方式路线规划，并可作为 PWA 离线使用。
 
 ## 功能特性
@@ -27,13 +29,13 @@
 
 三种方式，按需选择：
 
-**① 直接打开（file://）** —— 双击 `武汉景点地图.html` 即可运行，使用内嵌景点数据兜底（无后端人流，按本地时间估算）。
+**① 直接打开（file://）** —— 双击 `index.html` 即可运行，使用内嵌景点数据兜底（无后端人流，按本地时间估算）。
 
 **② 任意静态服务器（推荐）** —— 与后端同机部署时可用真实人流数据：
 
 ```bash
 python -m http.server 8000
-# 打开 http://127.0.0.1:8000/武汉景点地图.html
+# 打开 http://127.0.0.1:8000/index.html
 ```
 
 **③ 连同人流代理一起跑（完整体验）**：
@@ -58,7 +60,7 @@ npm start                   # 监听 :3000，前端与 /api/crowd 同源
 `npm test` 会先依次跑完三个构建再执行测试；产物与源文件不同步会被测试当场拦下（不会静默用旧代码）。
 
 ```
-武汉景点地图.html    # 入口页（PWA）
+index.html    # 入口页（PWA）
 app.js / style.src.css / spots.src.json    # 三份真相源
 server/              # 人流代理后端（Express，可选）
 test/frontend/       # 前端单测（vitest + jsdom，抽取真实源码执行）

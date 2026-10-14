@@ -62,7 +62,7 @@ describe('.sr-only 必须真的把 label 藏起来', () => {
   // 在 .rp-row(flex) 里各吃掉 ~45px：输入框被从 218px 挤到 172px，
   // placeholder「出发点，如：黄鹤楼」被截断，整列和面板右边缘也对不齐。
   // 教训：HTML 里出现了 class，CSS 里就必须有对应规则，别靠"它应该是隐藏的"。
-  const HTML = fs.readFileSync(path.join(ROOT, '武汉景点地图.html'), 'utf8');
+  const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
   it('HTML 里确实在用 class="sr-only"', () => {
     expect(HTML).toMatch(/class="sr-only"/);

@@ -16,7 +16,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 
 const SRC = path.join(ROOT, 'app.js');
 const OUT = path.join(ROOT, 'app.min.js');
-const HTML = path.join(ROOT, '武汉景点地图.html');
+const HTML = path.join(ROOT, 'index.html');
 
 describe('app.min.js 产物', () => {
   it('两个文件都存在', () => {
