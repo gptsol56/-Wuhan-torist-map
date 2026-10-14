@@ -12,14 +12,18 @@ const { HttpError } = require('./lib/errors');
 const app = express();
 app.disable('x-powered-by');
 
-// Gzip 压缩中间件：自动根据 Accept-Encoding 选择 br/gzip
-// 节省 ~75% 流量（JSON 文本压缩率高），CPU 消耗 < 1ms
+// 压缩中间件：按 Accept-Encoding 选 br/gzip。三条硬约束（2026-10 实测定稿）：
+//   1. 必须异步 —— *Sync 会卡死事件循环：brotli 默认 q11 压 113KB 的 app.min.js
+//      要 79ms（gzip 仅 2ms，40 倍），首屏 4 个资源同步串起来 = 200-300ms 里
+//      整个服务器（含 /api/crowd）无响应。异步版跑在 libuv 线程池，不碰事件循环。
+//   2. brotli 用 q4 —— 实测 1.5ms / 34KB（q11 是 79ms / 28KB：40 倍 CPU 只换来 6KB）。
+//   3. Vary 一律 res.vary()（追加语义）—— setHeader 是覆盖：压缩分支的
+//      'Accept-Encoding' 会踩掉 CORS 分支的 'Origin'（反之亦然），缓存可能串包。
 function compressionMiddleware(req, res, next){
   const accept = (req.headers['accept-encoding'] || '').toLowerCase();
   if(!accept.match(/\b(br|gzip)\b/)) return next();
   const encoding = accept.indexOf('br') >= 0 ? 'br' : 'gzip';
-  // 覆盖 end 方法
-  const originalWrite = res.write.bind(res);
+  res.vary('Accept-Encoding');   // 未压缩的响应也要声明：同一 URL 存在编码变体
   const originalEnd = res.end.bind(res);
   const chunks = [];
   res.write = function(chunk){
@@ -30,16 +34,22 @@ function compressionMiddleware(req, res, next){
     if(chunk) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     const body = Buffer.concat(chunks);
     // 仅压缩 >1KB 的文本/JSON
-    if(body.length > 1024 && /text|json|javascript|css/.test(res.getHeader('content-type') || '')){
-      const compressed = encoding === 'br' ? zlib.brotliCompressSync(body) : zlib.gzipSync(body);
-      if(compressed.length < body.length){
+    if(!(body.length > 1024 && /text|json|javascript|css/.test(res.getHeader('content-type') || ''))){
+      return originalEnd(body);
+    }
+    const finish = function(err, compressed){
+      if(!err && compressed && compressed.length < body.length){
         res.setHeader('Content-Encoding', encoding);
         res.setHeader('Content-Length', compressed.length);
-        res.setHeader('Vary', 'Accept-Encoding');
         return originalEnd(compressed);
       }
+      originalEnd(body);   // 压缩失败或反而变大 → 原样发送
+    };
+    if(encoding === 'br'){
+      zlib.brotliCompress(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 4 } }, finish);
+    } else {
+      zlib.gzip(body, finish);
     }
-    return originalEnd(body);
   };
   next();
 }
@@ -52,7 +62,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
   } else if (origin && origins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Vary', 'Origin');
+    res.vary('Origin');   // 追加而非 setHeader 覆盖 —— 与压缩中间件的 Accept-Encoding 共存
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
