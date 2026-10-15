@@ -26,7 +26,8 @@ describe('sw.js 缓存策略', () => {
 
   it('预缓存清单包含全部关键资源（A1：断网也有完整应用外壳）', () => {
     for (const f of ['style.min.css', 'app.min.js', 'spots.data.js', 'manifest.json',
-      'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png']) {
+      'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
+      'hubei.topo.json']) {
       expect(SW, `应预缓存 ${f}`).toContain(`scoped('${f}')`);
     }
     expect(SW, '应预缓存入口 HTML').toMatch(/ENTRY_HTML = scoped\('/);
@@ -41,5 +42,12 @@ describe('sw.js 缓存策略', () => {
 
   it('VERSION 是数字（每次改前端文件要 +1，activate 靠它清旧缓存）', () => {
     expect(SW).toMatch(/var VERSION = \d+/);
+  });
+
+  it('地图 SDK 走 SWR 缓存（O1）：1.6MB 的 SDK 不该让回头客每次重下', () => {
+    expect(SW).toContain("var SDK_CACHE = 'wuhan-map-sdk'");          // 不随 VERSION 走：发版不重下 SDK
+    expect(SW).toContain('mapapi.qq.com');                              // SDK 大包命中缓存分支
+    expect(SW, 'SDK 分支须在 external 网络only 分支之前').toMatch(/mapapi\.qq\.com[\s\S]*?if\(isExternalAPI/);
+    expect(SW, 'activate 清理须放行 SDK_CACHE').toMatch(/k !== RUNTIME_CACHE && k !== SDK_CACHE/);
   });
 });

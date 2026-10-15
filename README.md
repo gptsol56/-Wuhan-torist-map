@@ -1,6 +1,6 @@
 # 武汉景点地图
 
-[![CI](https://github.com/gptsol56/-Wuhan-torist-map/actions/workflows/ci.yml/badge.svg)](https://github.com/gptsol56/-Wuhan-torist-map/actions/workflows/ci.yml)
+[![CI](https://github.com/gptsol56/wuhan-travel-map/actions/workflows/ci.yml/badge.svg)](https://github.com/gptsol56/wuhan-travel-map/actions/workflows/ci.yml)
 
 零构建的单页 Web 应用 + 可选的人流代理后端：在腾讯地图上呈现武汉 50 个精选景点，提供近 10 天人流参考、预约/购票信息、多方式路线规划，并可作为 PWA 离线使用。
 
@@ -61,6 +61,7 @@ npm start                   # 监听 :3000，前端与 /api/crowd 同源
 
 ```
 index.html    # 入口页（PWA）
+hubei.topo.json # 行政边界（湖北/武汉）：阿里 DataV GeoAtlas 1.6.3，已本地化随应用部署
 app.js / style.src.css / spots.src.json    # 三份真相源
 server/              # 人流代理后端（Express，可选）
 test/frontend/       # 前端单测（vitest + jsdom，抽取真实源码执行）

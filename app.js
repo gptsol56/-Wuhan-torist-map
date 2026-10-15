@@ -2482,7 +2482,10 @@ function decodeTopo(topo){
   return { geomRings: geomRings };
 }
 function drawBoundary(){
-  fetch('https://file.geojson.cn/china/1.6.3/420000.topo.json')
+  /* 边界数据已本地化（O2）：原为每次访问从第三方 file.geojson.cn 拉取（144KB，
+     且它挂了边界就没了）。数据源：阿里 DataV GeoAtlas（geojson.cn）1.6.3 版
+     湖北省 TopoJSON，收进仓库随应用部署，同源出 + SW 预缓存（离线也有边界）。 */
+  fetch('hubei.topo.json')
     .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(function(topo){
       var dec = decodeTopo(topo);

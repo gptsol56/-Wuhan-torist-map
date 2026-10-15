@@ -1,11 +1,14 @@
-// PWA Service Worker v30 — 分级缓存策略
+// PWA Service Worker v48 — 分级缓存策略
 // 改任何前端文件后把 VERSION 加 1：三个缓存名都跟着它走，
 // activate 会顺手把上一个 VERSION 的缓存删掉（见下方 activate）。
-var VERSION = 46;
+var VERSION = 48;
 var CACHE = 'wuhan-map-v' + VERSION;
 var BYPASS = false;
 var STATIC_CACHE = 'wuhan-map-static-v' + VERSION;
 var RUNTIME_CACHE = 'wuhan-map-runtime-v' + VERSION;
+/* 地图 SDK 代码缓存（O1）：刻意【不】随 VERSION 走 —— SDK 本体 1.6MB，
+   发版不该让用户重下它。activate 的清理白名单同样放行这个名字。 */
+var SDK_CACHE = 'wuhan-map-sdk';
 
 /* 所有预缓存地址一律以 SW 注册的 scope 为基准解析（A2）。
    之前写死 '/style.min.css' 这类根绝对路径：部署到子路径（GitHub Pages 项目页、
@@ -30,7 +33,8 @@ self.addEventListener('install', function(e){
         scoped('icons/icon-192.png'),
         scoped('icons/icon-512.png'),
         scoped('icons/icon-maskable-512.png'),
-        scoped('icons/apple-touch-icon.png')
+        scoped('icons/apple-touch-icon.png'),
+        scoped('hubei.topo.json')   // 行政边界（O2 本地化）：离线也有边界层
       ]);
     }),
     caches.open(CACHE).then(function(c){
@@ -46,7 +50,7 @@ self.addEventListener('activate', function(e){
   e.waitUntil(Promise.all([
     caches.keys().then(function(keys){
       return Promise.all(keys.filter(function(k){
-        return k.indexOf('wuhan-map-') === 0 && k !== CACHE && k !== STATIC_CACHE && k !== RUNTIME_CACHE;
+        return k.indexOf('wuhan-map-') === 0 && k !== CACHE && k !== STATIC_CACHE && k !== RUNTIME_CACHE && k !== SDK_CACHE;
       }).map(function(k){ return caches.delete(k); }));
     }),
     self.clients.claim()
@@ -67,6 +71,7 @@ function isStaticAsset(url){
   return url.indexOf('style.min.css') >= 0 ||
          url.indexOf('app.min.js') >= 0 ||
          url.indexOf('spots.data.js') >= 0 ||
+         url.indexOf('hubei.topo.json') >= 0 ||   // 边界数据（O2）：同源静态资源
          url.indexOf('app.js') >= 0 ||       // 旧页面还可能直接请求源文件，同样按静态资源对待
          url.indexOf('manifest.json') >= 0;
 }
@@ -79,7 +84,7 @@ function isSpots(url){
 function isExternalAPI(url){
   return url.indexOf('map.qq.com') >= 0 ||
          url.indexOf('open-meteo') >= 0 ||
-         url.indexOf('geojson') >= 0 ||
+         // 'geojson' 已移除：边界数据本地化（O2）后不再有第三方 geojson.cn 请求
          url.indexOf('/api/') >= 0;
 }
 
@@ -91,6 +96,28 @@ self.addEventListener('fetch', function(e){
 
   if(BYPASS || url.indexOf('nocache') >= 0 || url.indexOf('fresh=') >= 0){
     e.respondWith(fetch(e.request));
+    return;
+  }
+
+  /* 地图 SDK 代码族（O1）：SWR —— gljs 装载器 + mapapi 大包合计 ~1.6MB，
+     原先 external 分支是网络 only，回头客每次都全量重下。
+     缓存秒出 + 后台静默更新；瓦片(pr.*)、配置探测等仍走网络。
+     注意：这些是 no-cors 的 opaque 响应，resp.ok 恒为 false（status 0），
+     不能拿 ok 当 cache.put 的条件。 */
+  if(url.indexOf('https://map.qq.com/api/') === 0 || url.indexOf('https://mapapi.qq.com/') === 0){
+    e.respondWith(
+      caches.open(SDK_CACHE).then(function(cache){
+        return cache.match(url).then(function(cached){
+          var networkFetch = fetch(e.request).then(function(resp){
+            try{ if(resp && (resp.ok || resp.type === 'opaque')) cache.put(url, resp.clone()); }catch(_){ /* 存不进就算了 */ }
+            return resp;
+          }).catch(function(){
+            return cached || new Response('', {status: 504, statusText: 'offline'});
+          });
+          return cached || networkFetch;
+        });
+      })
+    );
     return;
   }
 

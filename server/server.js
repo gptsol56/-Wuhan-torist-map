@@ -104,6 +104,7 @@ const LEGACY_ENTRY = '武汉景点地图.html';
 const PUBLIC_ASSETS = new Set([
   '/app.min.js', '/app.js',           // app.js 是源文件（测试用），保留直连兼容
   '/spots.data.js', '/spots.json',
+  '/hubei.topo.json',                 // 行政边界数据（O2 本地化）
   '/style.min.css', '/sw.js', '/manifest.json',
 ]);
 const PUBLIC_PAGES = new Set(['/', '/index.html', '/' + LEGACY_ENTRY]);
